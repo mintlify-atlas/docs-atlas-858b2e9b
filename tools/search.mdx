@@ -1,0 +1,92 @@
+---
+title: "search: Find Text Across Files, Folders, and URLs"
+sidebarTitle: "search"
+description: "The search MCP tool finds exact phrases or BM25-ranked passages across local files, directories (with .gitignore support), and web URLs. Returns one hit per line with context."
+---
+
+The `search` tool scans local files, directory trees, and web URLs for a query and returns one annotated hit per line. It operates in three modes: `auto` tries an exact phrase match first and falls back to BM25-ranked passage retrieval when nothing matches; `literal` enforces an exact phrase match only; and `ranked` always uses BM25 over the individual query words. Directories are searched recursively and `.gitignore` rules are respected automatically — anymd will not surface files your project intentionally excludes. No model, index, or API key is needed.
+
+## Arguments
+
+| Argument | Type | Default | Description |
+|---|---|---|---|
+| `query` | string | required | The text to find |
+| `sources` | string[] | current directory | Files, directories (searched recursively, `.gitignore` respected), or URLs. Up to 256 sources. |
+| `mode` | string | `"auto"` | `auto`: exact phrase, falling back to BM25 when nothing matches. `literal`: exact phrase only. `ranked`: BM25 over query words. |
+| `glob` | string | – | Only search files matching this glob inside directories, e.g. `"*.pdf"` or `"reports/**"` |
+| `case_sensitive` | boolean | `false` | Require case to match exactly |
+| `whole_word` | boolean | `false` | Match whole words only |
+| `max_results` | number 1–500 | `20` | Maximum number of hits to return |
+| `context_chars` | number 0–1000 | `80` | Number of characters of context to include on each side of a match |
+
+<ParamField path="query" type="string" required>
+  The text to search for. In `auto` or `literal` mode this is an exact phrase. In `ranked` mode it is treated as a bag of words and scored by BM25.
+</ParamField>
+
+<ParamField path="sources" type="string[]">
+  One or more files, directories, or URLs to search. Directories are searched recursively; `.gitignore` files are respected at every level. URLs are fetched and their main article content is searched. Defaults to the current working directory. Up to 256 sources per call.
+</ParamField>
+
+<ParamField path="mode" type='"auto" | "literal" | "ranked"'>
+  Controls how the query is matched. `"auto"` (default) runs an exact phrase search first; if no hits are found it automatically falls back to BM25-ranked passage retrieval. `"literal"` performs only exact phrase matching. `"ranked"` always uses BM25, scoring passages by how well they match the individual query words.
+</ParamField>
+
+<ParamField path="glob" type="string">
+  A glob pattern that filters which files inside directories are searched. Examples: `"*.pdf"` to search only PDF files, `"reports/**"` to search only files under a `reports` subdirectory. Files matched by `.gitignore` are still excluded.
+</ParamField>
+
+<ParamField path="max_results" type="number">
+  The maximum number of hits to return across all sources. Range 1–500, default `20`. Increase this when searching large corpora and expecting many relevant matches.
+</ParamField>
+
+<ParamField path="context_chars" type="number">
+  How many characters of surrounding context to include on each side of a matched phrase. Range 0–1000, default `80`. Set to `0` for bare match locations; raise it to get more passage context.
+</ParamField>
+
+## Example call and output
+
+Search all PDFs in the `papers/` directory for "masked language model":
+
+```json
+{ "query": "masked language model", "sources": ["papers/"] }
+```
+
+```markdown
+5 matches for "masked language model" (2 files, 31 sections searched)
+
+### papers/bert.pdf (5)
+- p.1: …by using a "**masked language model**" (MLM) pre-training objective, inspired by the Cloze task…
+- p.2: …In addition to the **masked language model**, we also use a "next sentence prediction" task…
+```
+
+The header line tells your agent the total match count, how many files contained hits, and how many sections were searched. Each hit shows the source file, the page or unit number, and a context snippet with the matched phrase in bold.
+
+Each hit also includes the node ID and title path of the section where the match was found. Pass that node ID directly to `read` to fetch the full section without running a separate `outline` call.
+
+## Search modes
+
+### `auto` (default)
+
+Runs an exact phrase search first. If that returns no results — for example, because the user's question is phrased differently from the source text — anymd automatically retries with BM25-ranked passage retrieval. This means a natural-language question like *"how does bidirectional pretraining work"* still finds the right section even if those exact words never appear together in the document.
+
+### `literal`
+
+Enforces an exact phrase match. Use `literal` when you need to confirm whether a specific string appears verbatim — for citation checking, compliance review, or locating a known identifier.
+
+### `ranked`
+
+Always uses BM25, scoring passages by how well they match the individual words in the query. Use `ranked` when you want relevance-ranked results from the start and don't need or expect an exact phrase match.
+
+<Tip>
+Use `mode: "ranked"` when you're exploring a document and don't know the exact wording. BM25 finds passages that discuss the topic even when the phrasing differs, and it's faster than `auto` because it skips the initial exact-match pass.
+</Tip>
+
+## Directory search and `.gitignore`
+
+When a source is a directory, anymd walks it recursively and searches every readable file it finds. At each level, any `.gitignore` file is read and its rules are applied — files and directories excluded by `.gitignore` are never opened or indexed. This means `search` naturally skips build artefacts, dependency directories, and any other files your project intentionally excludes, without any extra configuration.
+
+Use `glob` to narrow the search to specific file types or subdirectories when a folder contains many files you don't want to search:
+
+```json
+{ "query": "attention mechanism", "sources": ["research/"], "glob": "*.pdf" }
+```

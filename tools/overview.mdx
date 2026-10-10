@@ -1,0 +1,49 @@
+---
+title: "anymd MCP Tools: read, outline, search, inspect"
+sidebarTitle: "Overview"
+description: "anymd exposes four MCP tools your agent calls directly: read converts documents to Markdown, outline navigates structure, search finds text, and inspect goes deep on PDFs."
+---
+
+anymd exposes four MCP tools that AI agents call directly over the MCP protocol via stdio. Each tool is registered when you start the anymd MCP server — your MCP client (Claude Desktop, a custom agent, or any MCP-compatible framework) discovers them automatically through the standard `tools/list` handshake and invokes them by name with JSON arguments. No model, vector database, or external API key is required to use `outline`, `read`, or `search`; `inspect` operations that call external vision providers require the appropriate provider to be configured.
+
+| Tool | Use it to | Key arguments |
+|---|---|---|
+| [`read`](/tools/read) | Turn any file, URL, or directory into clean Markdown | `source`, `pages`, `max_tokens`, `cursor`, `ocr`, `images` |
+| [`outline`](/tools/outline) | Navigate a document's heading tree without reading it in full | `source`, `format`, `ocr`, `images`, `revisions` |
+| [`search`](/tools/search) | Find text across files, directories, and URLs | `query`, `sources`, `mode`, `glob`, `max_results` |
+| [`inspect`](/tools/inspect) | Render PDF pages, extract regions, run OCR, get structured JSON, or diff two PDFs | `operation`, `sources`, `profile`, `scale` |
+
+<CardGroup cols={2}>
+  <Card title="read" icon="file-lines" href="/tools/read">
+    Convert any local file, web URL, or directory listing to clean Markdown. Supports pagination, OCR, tracked changes, and embedded images.
+  </Card>
+  <Card title="outline" icon="list-tree" href="/tools/outline">
+    Return a document's heading tree with stable node IDs and byte ranges for efficient navigation of long PDFs, EPUB chapters, and slide decks.
+  </Card>
+  <Card title="search" icon="magnifying-glass" href="/tools/search">
+    Find exact phrases or BM25-ranked passages across local files, directories (with `.gitignore` support), and web URLs.
+  </Card>
+  <Card title="inspect" icon="microscope" href="/tools/inspect">
+    Go deeper on a PDF: render pages as images, extract bounding-box regions, run OCR, get structured JSON geometry, or diff two versions.
+  </Card>
+</CardGroup>
+
+## How agents discover and call these tools
+
+When the anymd MCP server starts, it registers all four tools over the MCP stdio transport. Your MCP client sends a `tools/list` request and receives the tool schemas — names, descriptions, and JSON Schema argument definitions. From that point on, the agent calls any tool by name:
+
+```json
+{
+  "method": "tools/call",
+  "params": {
+    "name": "read",
+    "arguments": { "source": "papers/attention.pdf" }
+  }
+}
+```
+
+anymd responds with a `content` array containing the tool result. For `read`, `outline`, and `search` that result is Markdown text. For `inspect` it is structured JSON. No polling, no streaming — each call is a single request/response round-trip over stdio.
+
+<Tip>
+Call `outline` before `read` on any document longer than a few pages. The outline returns the full heading tree with page ranges so your agent can jump directly to the relevant section using a `node` id, rather than paginating through the entire document.
+</Tip>

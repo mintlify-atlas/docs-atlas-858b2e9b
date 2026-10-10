@@ -1,0 +1,64 @@
+---
+title: "Supported File Formats and What anymd Extracts"
+sidebarTitle: "Overview"
+description: "anymd reads 15+ file formats natively in Rust — PDF, Word, PowerPoint, Excel, EPUB, HTML, images, audio, and video — no Python, LibreOffice, or cloud service required."
+---
+
+One `read` call handles every format listed below. anymd detects the file type from its bytes, not its name, so renamed or extension-less files work without any hint. Every parser is native Rust — zip/XML, calamine, html5ever — with no Python subprocess, no LibreOffice bridge, and no data leaving your machine.
+
+## Formats at a glance
+
+| Input | What you get |
+|---|---|
+| PDF | Reading-order Markdown with headings, lists, tables, and `<!-- page N -->` anchors |
+| Word `.docx` | Headings, formatting, links, lists, tables, footnotes, equations, tracked changes and comments |
+| PowerPoint `.pptx` | One section per slide, with speaker notes and chart data |
+| Excel `.xlsx .xls .ods` · CSV/TSV | One Markdown table per sheet |
+| EPUB | One section per chapter in spine order |
+| HTML and URLs | Main article only — navigation and banners stripped |
+| Markdown, text, JSON | Returned unchanged, with pagination |
+| Images | Dimensions, EXIF metadata, and OCR text |
+| Audio / video | Duration, streams, chapters, subtitles, and transcripts |
+
+<CardGroup cols={2}>
+  <Card title="PDF" icon="file-pdf" href="/formats/pdf">
+    Layout engine, table detection, page anchors, and OCR for scanned documents.
+  </Card>
+  <Card title="Office & Web" icon="file-word" href="/formats/office">
+    Word with tracked changes, PowerPoint slides, Excel sheets, EPUB chapters, and HTML pages.
+  </Card>
+  <Card title="Media" icon="photo-film" href="/formats/media">
+    Image EXIF and OCR, audio/video metadata, embedded subtitles, and local speech transcription.
+  </Card>
+  <Card title="Embedded Images" icon="image" href="/formats/office#embedded-images">
+    Figures and pictures inside PDF, DOCX, PPTX, and EPUB exported to cache and marked in reading order.
+  </Card>
+</CardGroup>
+
+## Optional tools
+
+anymd never requires these tools to run, but automatically uses them when they are present on your `PATH`:
+
+| Tool | What it adds |
+|---|---|
+| `tesseract` | OCR for images and scanned PDF pages |
+| `ffprobe` | Audio/video metadata and chapters |
+| `ffmpeg` | Embedded subtitles and transcript audio |
+| `crispasr` | Qwen3-ForcedAligner word timestamps for supported languages (alignment only — does not run ASR) |
+
+Run `anymd doctor` to see exactly what anymd found on your system and whether the ASR model is installed:
+
+```bash
+$ anymd doctor
+anymd 6.0.0 (native Rust)
+  tesseract    found      OCR for images and scanned PDF pages
+  ffprobe      found      audio/video metadata and chapters
+  ffmpeg       found      embedded subtitles and transcript audio
+Transcripts (--transcript):
+  ASR runtime    transcribe-cpp 0.2.4 (CPU, bundled)
+  ASR model      not installed: Qwen3-ASR-1.7B-Q8_0.gguf (2185 MB, SHA-256 pinned)
+```
+
+<Tip>
+On macOS, `brew install tesseract ffmpeg` gets you OCR and full audio/video support in one step. On Debian/Ubuntu, use `apt install tesseract-ocr ffmpeg`. For non-Latin OCR languages, add the matching tesseract language pack — for example `tesseract-ocr-chi-tra` for Traditional Chinese.
+</Tip>

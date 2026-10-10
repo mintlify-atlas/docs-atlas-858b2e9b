@@ -1,0 +1,139 @@
+---
+title: "read: Convert Any File or URL to Markdown"
+sidebarTitle: "read"
+description: "The read MCP tool converts a local file, web URL, or directory listing to clean Markdown. Supports pagination with max_tokens and cursor, OCR, tracked changes, and embedded images."
+---
+
+The `read` tool is anymd's primary conversion engine. Pass it a local file path, an `http(s)` URL, or a directory path and it returns clean, well-structured Markdown ready for your agent to process. For paginated documents — PDFs, presentations, spreadsheets, and EPUB books — `read` adds YAML front matter describing the source and page range, plus `<!-- unit label -->` anchors before each page, slide, sheet, or chapter. When a document exceeds the token budget, `read` stops at a natural unit boundary and appends a cursor your agent passes back to continue from exactly where it left off.
+
+## Arguments
+
+| Argument | Type | Default | Description |
+|---|---|---|---|
+| `source` | string | required | File path, `http(s)` URL, or directory. A directory returns the list of readable files. |
+| `node` | string | – | Read the section ID from `outline`; includes all child sections. Unknown IDs return an error. |
+| `pages` | string | all | Pages (PDF), slides, sheets, or chapters to read, e.g. `"1-5,8"` |
+| `max_tokens` | number ≥ 500 | `20000` | Token budget. Longer documents stop at a page/slide/chapter boundary and end with a cursor. |
+| `cursor` | string | – | Continue a previous read with the cursor from its last line. |
+| `ocr` | `"auto"` \| `"vlm"` \| `"tesseract"` \| boolean | automatic | Local OCR for images and scanned PDF pages. `false` disables; `true` enables the default runtime. No automatic model downloads. |
+| `revisions` | `"markup"` \| `"accept"` \| `"reject"` | `"markup"` | Word tracked changes and comments. `markup` writes them as CriticMarkup with author and date; `accept` or `reject` gives the final text without comments. |
+| `images` | `"refs"` \| `"none"` | `"refs"` | Images embedded in PDFs, DOCX, PPTX, and EPUB files. `refs` saves each meaningful raster image to the anymd cache and marks it in Markdown; `none` omits images entirely. |
+| `transcript` | boolean | `false` | Transcribe audio or video files using the bundled Qwen3-ASR model. |
+| `download_asr_model` | boolean | `false` | Implies `transcript`; downloads Qwen3-ASR-1.7B Q8 weights (~2.19 GB, SHA-256 verified) into the anymd cache when none is installed. |
+
+<ParamField path="source" type="string" required>
+  The file to convert. Accepts a local file path (relative or absolute), an `http(s)` URL, or a directory path. Passing a directory returns a list of all readable files inside it — useful for letting your agent choose which file to read or pass the directory to `search`.
+</ParamField>
+
+<ParamField path="pages" type="string">
+  A comma-separated list of page ranges to read, e.g. `"1-5,8"`. Applies to PDF pages, PPTX slides, spreadsheet sheets, and EPUB chapters. Intersects with a `node`'s unit range when both are supplied.
+</ParamField>
+
+<ParamField path="max_tokens" type="number">
+  The maximum number of tokens to return in a single response. Defaults to `20000`. `read` always stops at a clean unit boundary (page, slide, sheet, or chapter) — never mid-sentence. When the document is longer than the budget, the last line of the response contains a cursor.
+</ParamField>
+
+<ParamField path="cursor" type="string">
+  Resume a paginated read. Pass back the cursor value exactly as it appeared on the last line of the previous response. Combine with the same `source` (and `node`, if used) to continue from the next unit.
+</ParamField>
+
+<ParamField path="ocr" type='"auto" | "vlm" | "tesseract" | boolean'>
+  Controls local OCR for scanned pages and image-only PDFs. The default (`automatic`) uses explicitly installed models but never downloads them. Set `true` to enable the configured runtime (`ANYMD_OCR` environment variable when set). Set `false` to disable OCR entirely. Named engines (`"vlm"`, `"tesseract"`) override the environment default for this call.
+</ParamField>
+
+<ParamField path="revisions" type='"markup" | "accept" | "reject"'>
+  How to render Word tracked changes and comments. `"markup"` (default) encodes every insertion, deletion, and comment as CriticMarkup with the change's author and date. `"accept"` resolves all changes as accepted and strips comments. `"reject"` resolves all changes as rejected and strips comments. Documents with no tracked changes or comments read identically under all three modes.
+</ParamField>
+
+<ParamField path="images" type='"refs" | "none"'>
+  Whether to include embedded images from PDFs, DOCX, PPTX, and EPUB files. `"refs"` (default) saves each meaningful raster image to the anymd cache and inserts a Markdown image reference. `"none"` omits images entirely and produces a leaner, text-only output.
+</ParamField>
+
+<ParamField path="transcript" type="boolean">
+  Set to `true` to transcribe an audio or video file using the bundled Qwen3-ASR model. The model must already be installed — use `download_asr_model: true` to download it on first use.
+</ParamField>
+
+## Example output
+
+A standard `read` call on a PDF produces YAML front matter followed by page-anchored Markdown:
+
+```json
+{ "source": "papers/attention.pdf" }
+```
+
+```markdown
+---
+source: papers/attention.pdf
+title: Attention Is All You Need
+pages: 15
+showing: pages 1-9
+---
+
+<!-- page 1 -->
+
+# Attention Is All You Need
+…
+
+<!-- page 8 -->
+
+|Model|BLEU EN-DE|BLEU EN-FR|
+|-|-|-|
+|Transformer (big)|28.4|41.8|
+…
+
+<!-- Stopped at the 20000-token budget. Continue with cursor: "10", or pick pages, or raise max_tokens. -->
+```
+
+The front matter tells your agent the document's title, total page count, and which pages are shown in this response. Each `<!-- page N -->` anchor marks the start of a new unit. The final comment tells you the cursor value to use if you want to continue.
+
+## Pagination and cursors
+
+When a document is longer than `max_tokens`, `read` stops at the last complete unit that fits and appends a cursor on the final line. Pass the cursor back with the same `source` to continue from the next unit:
+
+```json
+{ "source": "papers/attention.pdf", "cursor": "10" }
+```
+
+A cursor is either `"<page>"` for a normal unit boundary, or `"<page>:<offset>"` when a single page was larger than the entire budget and had to be split at a character offset. You never need to construct cursors manually — just copy the value from the response.
+
+As an alternative to cursors, you can request exactly the pages you need with `pages`:
+
+```json
+{ "source": "papers/attention.pdf", "pages": "1-5" }
+```
+
+Or raise `max_tokens` to fit more content in one response. For targeted reading of a known section, use `node` instead:
+
+```json
+{ "source": "report.pdf", "node": "n1.2" }
+```
+
+If a node read is itself paginated, pass both `source` and `node` alongside the returned cursor to continue.
+
+## Scanned pages
+
+A PDF page that has no text layer and whose content is covered by images is a scan. When OCR is not configured — or when `ocr: false` is passed — `read` inserts an explanatory placeholder rather than returning an empty page. The placeholder tells your agent which page was scanned and explains how to enable OCR: run `anymd setup ocr` in a terminal to opt into downloading the OCR engine and approximately 2 GB of model weights, then retry with `ocr: true`.
+
+The front matter of any response that encountered scanned pages includes a `scanned_pages` key listing the affected page numbers shown in that response:
+
+```markdown
+---
+source: report.pdf
+title: Quarterly Report
+pages: 12
+showing: pages 1-6
+scanned_pages: [3, 5]
+---
+```
+
+When every page in the response is a scan, the body opens with the same guidance. Pages that have a text layer are returned normally, and any scanned page that OCR successfully reads receives no placeholder.
+
+## Folders and URLs
+
+Passing a directory path to `read` returns a list of all readable files inside it. This lets your agent survey what's available before deciding which file to convert or which paths to pass to `search`:
+
+```json
+{ "source": "papers/" }
+```
+
+Passing an `http(s)` URL returns the main article content of the page as Markdown — boilerplate navigation, headers, and footers are stripped. This is useful for ingesting documentation pages, blog posts, or any publicly accessible article. For full details on URL and HTML handling see the [Formats](/formats#html-and-urls) reference.

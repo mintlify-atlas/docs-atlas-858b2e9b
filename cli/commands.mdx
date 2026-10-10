@@ -1,0 +1,117 @@
+---
+title: "anymd CLI Command Reference"
+sidebarTitle: "Commands"
+description: "Complete reference for all anymd CLI commands: convert files, outline documents, search folders, run the MCP server, configure clients, and manage OCR. Exit codes included."
+---
+
+anymd serves a dual purpose: it is both a fast MCP server that AI agents connect to over stdio or HTTP, and a standalone command-line converter that turns PDFs, Word documents, PowerPoint decks, spreadsheets, EPUB books, web pages, images, and audio/video files into clean Markdown. The same binary handles both roles — when stdin is piped and no file arguments are given it automatically enters MCP server mode, so a single `npx -y @sylphx/anymd` command works in both contexts without any extra flags.
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `anymd <file\|url\|dir>... [options]` | Convert one or more files, URLs, or directories to Markdown on stdout |
+| `anymd - [options]` | Convert stdin; the format is detected automatically from the bytes |
+| `anymd outline <file\|url> [--format tree\|json]` | Show the document's section tree (tree by default; `--format json` emits preorder nodes with byte ranges) |
+| `anymd search <query> [path\|url...]` | Search files and directories for a query (default path: `.`) |
+| `anymd mcp [--allow-dir=<path>]...` | Run the MCP server on stdio |
+| `anymd setup [--dry-run] [--remove]` | Add anymd to the MCP clients on this machine; `--remove` undoes it |
+| `anymd setup ocr` | Download and SHA-256-verify the doc-VLM OCR engine and its weights (~2 GB); opts into CPU inference |
+| `anymd doctor` | Print the version and which optional tools were found |
+| `anymd version` | Print the version |
+
+## anymd \<file|url|dir\>
+
+Convert one or more inputs to Markdown. Results are written to stdout unless `-o` is given. When multiple inputs are provided each one is preceded by a Markdown header.
+
+```bash
+# Single file
+anymd report.pdf > report.md
+
+# Multiple files (each separated by a header)
+anymd deck.pptx notes.docx budget.xlsx
+
+# Web page — extracts main content only
+anymd https://example.com/article
+```
+
+## anymd -
+
+Read from stdin. anymd detects the file format from the byte content, so you can pipe any supported file type through it.
+
+```bash
+cat scan.png | anymd - --ocr
+```
+
+## anymd outline
+
+Print the document's section tree so you can navigate large files by node ID before reading. The default format is an indented tree; `--format json` gives a machine-readable preorder list of nodes with byte ranges and stable IDs.
+
+```bash
+anymd outline report.pdf
+anymd outline report.pdf --format json
+```
+
+## anymd search
+
+Search one or more files, directories, or URLs for a query string. Results include the matching snippet, the node ID, and the title path so you can jump straight to the right section.
+
+```bash
+anymd search "indemnification" contracts/ --glob '*.pdf'
+```
+
+## anymd mcp
+
+Launch the MCP server on stdio. This is the command MCP clients invoke. Pass `--allow-dir` once per directory to restrict which paths the server may access.
+
+```bash
+anymd mcp
+```
+
+## anymd setup
+
+Register anymd as an MCP server in the supported clients installed on this machine (Claude Desktop, Cursor, and others). Pass `--dry-run` to preview the changes without writing anything, or `--remove` to undo a previous registration.
+
+```bash
+anymd setup
+```
+
+## anymd setup ocr
+
+Download the doc-VLM OCR engine (`anymd-ocr-vlm`) and its PaddleOCR-VL weights (~2 GB) into the anymd cache directory, verifying every file against a pinned SHA-256 signed by anymd's built-in key. This is a one-time explicit opt-in to local VLM-based OCR; the weights are never downloaded automatically during conversion.
+
+```bash
+anymd setup ocr
+```
+
+## anymd doctor
+
+Report the installed anymd version and check which optional runtime tools — such as `tesseract` for OCR and `ffmpeg` for audio/video transcription — are available on the current machine.
+
+```bash
+anymd doctor
+```
+
+<Tip>
+  Run `anymd doctor` first when setting up a new machine or troubleshooting a failed conversion. It tells you exactly which optional capabilities (Tesseract, ffmpeg, VLM weights) are present and which are missing.
+</Tip>
+
+## anymd version
+
+Print the installed anymd version string and exit.
+
+```bash
+anymd version
+```
+
+## Exit codes
+
+| Code | Meaning |
+|---|---|
+| `0` | Success |
+| `1` | An input could not be read, or the output could not be written |
+| `2` | Usage error (unknown option, missing required value, or no input provided) |
+
+<Note>
+  anymd automatically detects MCP mode when stdin is piped and no file arguments are given. This means `npx -y @sylphx/anymd` and `docker run --rm ghcr.io/sylphxai/anymd` work as MCP servers without any additional flags — the same binary serves both the CLI and the MCP transport.
+</Note>

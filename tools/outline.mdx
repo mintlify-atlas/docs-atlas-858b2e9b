@@ -1,0 +1,96 @@
+---
+title: "outline: Navigate Document Structure Without Reading It"
+sidebarTitle: "outline"
+description: "The outline MCP tool returns a document's heading tree with stable node IDs and byte ranges, letting your agent navigate long PDFs, EPUB chapters, or slide decks efficiently."
+---
+
+The `outline` tool returns a document's full heading tree before you commit to reading it. Each node carries a stable ID, a title, its depth in the hierarchy, the range of pages or chapters it spans, and a precise byte range into the canonical Markdown body — so your agent can jump straight to the relevant section with a `node` read rather than paginating through the entire document. No model, vector database, or API key is required; anymd builds the outline entirely from the document's own structure.
+
+## Arguments
+
+| Argument | Type | Default | Description |
+|---|---|---|---|
+| `source` | string | required | File path or `http(s)` URL |
+| `format` | `"json"` \| `"tree"` | `"json"` | Machine-readable preorder nodes or a human-readable indented tree |
+| `ocr` | boolean or `"auto"` \| `"vlm"` \| `"tesseract"` | `false` | OCR image-only pages when building the outline. Use the same value in subsequent node reads. |
+| `images` | `"none"` \| `"refs"` | `"none"` | Embedded image handling. Use the same value in subsequent node reads. |
+| `revisions` | string | `"markup"` | Word tracked-changes mode. Use the same value in subsequent node reads. |
+
+<ParamField path="source" type="string" required>
+  The document to outline. Accepts a local file path (relative or absolute) or an `http(s)` URL. All formats supported by `read` are supported here.
+</ParamField>
+
+<ParamField path="format" type='"json" | "tree"'>
+  Controls the output format. `"json"` (default) returns a machine-readable array of nodes in preorder — ideal for programmatic navigation. `"tree"` returns an indented text tree that is easy to read in a chat or terminal.
+</ParamField>
+
+<ParamField path="ocr" type='boolean | "auto" | "vlm" | "tesseract"'>
+  Whether to run OCR when building the outline. Defaults to `false`. If you later call `read` with OCR enabled on the same document, pass the same `ocr` value to `outline` so the byte ranges in node metadata remain consistent.
+</ParamField>
+
+<ParamField path="images" type='"none" | "refs"'>
+  Embedded image handling used when computing byte ranges. Defaults to `"none"`. Pass the same value to `read` when reading nodes to keep byte ranges in sync.
+</ParamField>
+
+<ParamField path="revisions" type='"markup" | "accept" | "reject"'>
+  Word tracked-changes mode used when computing the canonical Markdown body. Defaults to `"markup"`. Pass the same value to `read` when reading nodes.
+</ParamField>
+
+## Node IDs and structure
+
+Every node in the outline has the following fields:
+
+- **`id`** — a stable dotted string like `n1`, `n1.2`, or `n1.1.1`. `n1` is always the document root; its direct children are `n1.1`, `n1.2`, and so on, recursively.
+- **`title`** — the heading text or, for unit nodes, a generated label.
+- **`level`** — heading depth (1 = top-level heading, 2 = subheading, etc.).
+- **`from` / `to`** — inclusive, 1-based unit numbers (pages for PDF, slides for PPTX, sheets for spreadsheets, chapters for EPUB) that this node spans.
+- **`start` / `end`** — a half-open UTF-8 byte range into the canonical Markdown body (not including YAML front matter). Each unit in the body is its trimmed Markdown content followed by two newlines, preceded by a `<!-- unit label -->` comment and two newlines for PDF or multi-unit files.
+- **`children`** — the count of immediate children.
+- **`path`** — the title path from the document root to this node.
+
+IDs are deterministic for an unchanged document with unchanged extraction options. They are not durable identifiers across edits to the document. A PDF bookmark resolves to its page, so bookmarks that share a page can produce overlapping nodes. TOCs may omit sections; text outside any section belongs to the nearest containing node, including the root.
+
+## Example calls
+
+Get an indented tree overview — useful for humans and agents alike:
+
+```json
+{ "source": "report.pdf", "format": "tree" }
+```
+
+Get the full preorder node array for programmatic navigation:
+
+```json
+{ "source": "report.pdf", "format": "json" }
+```
+
+Once you have a node ID from the outline, pass it to `read` to fetch just that section and its children:
+
+```json
+{ "source": "report.pdf", "node": "n1.2" }
+```
+
+If that node read is paginated, continue it by passing both `source` and `node` with the returned cursor:
+
+```json
+{ "source": "report.pdf", "node": "n1.2", "cursor": "5" }
+```
+
+The `pages` argument in a `read` call intersects with the node's unit range, so you can further narrow a node read to specific pages within it.
+
+<Note>
+Node IDs are **deterministic** for a document whose content and extraction options (`ocr`, `images`, `revisions`) have not changed — you can call `outline` once and reuse the IDs throughout a session. They are **not durable** across edits to the document itself: if the file changes between calls, re-run `outline` to get fresh IDs before calling `read` with a `node`.
+</Note>
+
+## Per-format behaviour
+
+How `outline` builds the heading tree depends on the file format:
+
+- **PDF** — uses embedded bookmarks when the document has them. Falls back to headings detected by the layout engine when bookmarks are absent. A PDF with no headings at all gets a flat list of unit (page) nodes.
+- **Word (.docx)** — uses the document's heading styles (`Heading 1`, `Heading 2`, etc.).
+- **PowerPoint (.pptx)** — uses slides as nodes; each slide's title becomes the node title.
+- **EPUB** — uses the EPUB 3 Navigation Document (TOC) when present, falling back to the EPUB 2 NCX, and finally to detected chapters and headings when neither TOC format is present.
+- **HTML and Markdown** — uses the heading elements (`<h1>`–`<h6>` or `#`–`######`).
+- **Other formats** — documents with no headings get unit nodes so every page or chapter is still individually addressable.
+
+Search hits also include the node ID and title path of the section where the match was found, so you can pass those IDs directly to `read` without running a separate `outline` call.

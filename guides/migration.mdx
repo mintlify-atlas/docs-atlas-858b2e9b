@@ -1,0 +1,64 @@
+---
+title: "Migrate from pdf-reader-mcp or Citra to anymd"
+sidebarTitle: "Migration"
+description: "anymd was formerly pdf-reader-mcp and Citra. Old configs still work — this guide covers the package rename, new tool names (read/search/inspect), and the new Markdown output format."
+---
+
+anymd was originally called **pdf-reader-mcp**, then renamed to **Citra** before settling on its current name. Existing setups keep working without any changes — the old packages are thin aliases published at the same version that run the anymd binary underneath. For new installs, and to get a shorter server name in your MCP client, switch to `npx -y @sylphx/anymd`.
+
+## Package names
+
+| Before | Now |
+|---|---|
+| `npx -y @sylphx/pdf-reader-mcp` | `npx -y @sylphx/anymd` |
+| `npx -y @sylphx/citra` | `npx -y @sylphx/anymd` |
+| MCP registry `io.github.SylphxAI/pdf-reader-mcp` | `io.github.SylphxAI/anymd` |
+| `CITRA_RUST_BIN` | `ANYMD_BIN` |
+
+<Note>
+`@sylphx/pdf-reader-mcp` and `@sylphx/citra` are published at the same version as thin aliases — they simply invoke anymd. Old configs need no change. `ANYMD_RUST_BIN` also still works as an alias for `ANYMD_BIN`.
+</Note>
+
+## Tool names
+
+| Before | Now |
+|---|---|
+| `read_pdf` | `read` |
+| `search_pdf` | `search` |
+| `pdf_evidence` | `inspect` |
+| `pdf_compare` | `inspect` with `operation: "compare"` |
+
+<Note>
+The old tool names still work in this major version, but they no longer appear in `tools/list`. Agents that discover available tools will see only the new names; agents with hardcoded old names continue to work.
+</Note>
+
+## Simpler arguments
+
+The new tools accept a flat argument structure instead of a nested sources array:
+
+```json
+// before
+{ "sources": [{ "path": "report.pdf", "pages": "1-5" }] }
+// now
+{ "source": "report.pdf", "pages": "1-5" }
+```
+
+`search` now takes plain strings in `sources` (files, folders, or URLs) and searches every supported format, not just PDFs.
+
+## Markdown by default
+
+`read` and `search` now answer in compact Markdown rather than a JSON envelope. The output includes `<!-- page N -->` anchors, a small front-matter header, pipe tables, and a `max_tokens` budget (default 20,000 tokens) with a cursor for pagination. As a concrete example, *Attention Is All You Need* comes back as **42 KB of Markdown** instead of a 2 MB JSON envelope.
+
+## Structured JSON still available
+
+If you relied on the structured JSON result — document map, elements with bounding boxes, tables with geometry, trust and accessibility reports — it is still available:
+
+```json
+{ "operation": "structure", "sources": [{ "path": "report.pdf" }], "profile": "research" }
+```
+
+Use `inspect` with `operation: "structure"` and a `profile` of `fast` (default), `quality`, or `research`. The legacy `read_pdf` tool also still returns JSON when you pass a `profile` argument or any `include_*` flag; a plain `read_pdf` call with only `sources` now returns Markdown instead.
+
+<Note>
+**The `@sylphx/anymd/sdk` package was removed in 8.0.0.** The TypeScript SDK (exported as class `Anymd` or `Citra`) is no longer available. Use the `anymd` CLI directly, or connect to `anymd mcp` using any MCP client library instead.
+</Note>

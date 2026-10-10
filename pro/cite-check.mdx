@@ -1,0 +1,109 @@
+---
+title: "Cite-Check: Verify a PDF Quote at Its Claimed Location"
+sidebarTitle: "Cite-Check"
+description: "cite_check verifies whether a quoted passage occurs in a PDF at the stated page and bounding box. Returns verified_exact, verified_normalized, unmatched, or insufficient_evidence."
+---
+
+`cite_check` checks whether a quoted passage occurs in the text extracted from a PDF at the physical page and bounding box you supply. It checks quote and location support in extracted evidence — it is **not** a claim that the underlying statement is semantically true, and it does not independently verify OCR accuracy. No model judges the quote. Native PDF text is always checked first; OCR is only used when you explicitly request it. `cite_check` is part of anymd Pro.
+
+<Warning>
+  **cite_check requires anymd Pro.** Without a valid Pro licence, the operation returns a short message with a link to the Pro page and does no work. See the [Pro overview](/pro/overview) for pricing and activation.
+</Warning>
+
+## How to call it
+
+Pass `operation: "cite_check"` to `inspect` along with exactly one PDF source and a list of citations. Each citation supplies its own location — there is no top-level `pages` or `regions` field.
+
+```json
+{
+  "operation": "cite_check",
+  "sources": [{ "path": "report.pdf" }],
+  "citations": [
+    {
+      "id": "revenue-line",
+      "quote": "Total revenue",
+      "page": 3,
+      "bounding_box": { "left": 70, "bottom": 420, "right": 310, "top": 450 }
+    }
+  ]
+}
+```
+
+## Inputs
+
+<ParamField path="sources" type="array" required>
+  Exactly one PDF source. Supply either `{ "path": "report.pdf" }` for a local file or `{ "url": "https://example.org/report.pdf" }` for a remote file. Use an explicit `url` key for URLs — do not put a URL in `path`. Local sources follow the server's allowed-directory policy, including symlinks. Sources are limited to 256 MiB.
+</ParamField>
+
+<ParamField path="citations" type="array" required>
+  A list of 1–100 citation objects to check. Each object has the following fields:
+
+  <ParamField path="citations[].id" type="string">
+    Optional identifier for the citation. Returned unchanged in each result to help you correlate inputs and outputs.
+  </ParamField>
+
+  <ParamField path="citations[].quote" type="string" required>
+    The passage to look for. Must be non-empty. Maximum 4,096 UTF-16 units per quote (an astral character counts as two units). All quotes combined must not exceed 64,000 UTF-16 units. Matching is always case-sensitive.
+  </ParamField>
+
+  <ParamField path="citations[].page" type="integer" required>
+    The one-based physical page number where the quote is claimed to appear. Printed page labels (e.g. "iv", "A-3") are not page numbers. At most 20 distinct pages are checked per call.
+  </ParamField>
+
+  <ParamField path="citations[].bounding_box" type="object" required>
+    The region on the page where the quote should appear, in bottom-left PDF coordinates: `{ "left", "bottom", "right", "top" }`. All coordinates must be finite numbers with positive width and height. There is no padding option; the only containment tolerance is 0.0001 PDF unit, for coordinate rounding.
+  </ParamField>
+</ParamField>
+
+<ParamField path="normalization" type="string">
+  Controls how quotes and extracted text are compared. `"none"` (default) requires an exact match. `"whitespace_v1"` collapses Unicode whitespace runs to a single ASCII space and trims boundaries before comparing — it does not change case, punctuation, ligatures, hyphenation, or spelling. Exact matches always take priority over normalised matches.
+</ParamField>
+
+<ParamField path="expected_source_sha256" type="string">
+  Optional 64-character hexadecimal SHA-256 of the PDF. If the actual file hash does not match, every citation returns `insufficient_evidence` without any extraction or OCR being attempted.
+</ParamField>
+
+<ParamField path="ocr" type="string">
+  Optional OCR mode. One of `"auto"`, `"vlm"`, or `"tesseract"`, using the existing OCR owner and request permit. Omit this field entirely to check native PDF text only — OCR is never run automatically.
+</ParamField>
+
+<ParamField path="timeout_ms" type="integer">
+  Request deadline in milliseconds. Range: 1,000–300,000. Default: 60,000. A single deadline covers source fetching, text extraction, and any optional OCR. The native worker is supervised and terminated when the deadline expires.
+</ParamField>
+
+<ParamField path="max_output_chars" type="integer">
+  Maximum size of the output in UTF-16 units. Range: 1,000–1,000,000. Default: 200,000. If the supporting location evidence for any citation would exceed this budget, that citation returns `insufficient_evidence` rather than truncated proof.
+</ParamField>
+
+<Note>
+  Native PDF text is always checked first. OCR runs only when you explicitly set the `ocr` option — it never downloads a model automatically.
+</Note>
+
+## Results
+
+One result is returned per citation, in the same order as the input list.
+
+| Verdict | Meaning |
+|---|---|
+| `verified_exact` | The original quote occurs at the requested location with complete supporting geometry |
+| `verified_normalized` | Exact matching failed, but explicit `whitespace_v1` matched with supported geometry |
+| `unmatched` | Complete admissible evidence was checked and did not support the quote at that location |
+| `insufficient_evidence` | The source hash, text coverage, geometry, or requested OCR cannot support a decision |
+
+Each result carries the source SHA-256 and the physical page number. Up to **8 supported occurrences** are returned per quote when the quote appears more than once. Supported locations include the observed original text, reading-order UTF-16 start/end offsets, supporting boxes, and a geometry level. The evidence layer identifies whether native text or an OCR provider was used, its model provenance, and the render evidence ID.
+
+Mixed spans (spanning multiple text items) carry `geometry_level: "mixed"` and include a `geometry_levels` label for each supporting box. Native character positions are labelled `char_estimated`, not exact glyph geometry. Whole text items use `text_item`; OCR words and regions keep coarser `ocr_word` or `ocr_region` labels.
+
+## What it checks vs. what it does not
+
+**Checks:**
+- Whether the quote occurs in text extracted from the stated page inside the stated bounding box
+- Exact match first; normalised match (`whitespace_v1`) if you request it
+- Native PDF text by default; extracted OCR text if you enable it
+
+**Does NOT check:**
+- Whether the underlying statement is semantically true
+- Whether OCR read the source document correctly
+- Document authenticity or chain of custody
+
+An image-only scan without OCR, missing geometry, truncated extraction, and a coarse region that cannot establish containment all return `insufficient_evidence` rather than `unmatched`. A supported positive can stand even if other unrelated evidence is incomplete. Page-local extraction failures do not erase supported quotes on other pages. Invalid arguments, denied access, a non-PDF source, and worker execution failures are returned as tool errors.

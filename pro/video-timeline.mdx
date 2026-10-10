@@ -1,0 +1,91 @@
+---
+title: "Video Timelines and Frame Extraction for AI Agents"
+sidebarTitle: "Video Timeline"
+description: "anymd Pro's video_timeline operation returns a bounded, hashed video timeline with scenes and subtitle cues. render_frame extracts exact decoded frames with SHA-256 for verifiable citations."
+---
+
+When an agent summarises a deposition video, an earnings call, a lecture, or any recorded media, there is normally no way to check its work. anymd Pro's video timeline operations give agents something verifiable to cite: a bounded, source-hashed timeline of scenes and subtitle cues, and exact decoded frames tied to specific timestamps and SHA-256 hashes. These operations are designed for legal review, research, finance, and media work — anywhere a citation needs to hold up to scrutiny. Both `video_timeline` and `render_frame` are part of anymd Pro.
+
+<Warning>
+  **video_timeline and render_frame require anymd Pro.** Without a valid Pro licence, both operations return a short message with a link to the Pro page and do no work. See the [Pro overview](/pro/overview) for pricing and activation.
+</Warning>
+
+## Video timeline
+
+The `video_timeline` operation returns an ordered, bounded timeline for a video: FFmpeg-detected scene cuts, chapters, and structured subtitle or transcript cues, all tied to the source file's SHA-256.
+
+```json
+{
+  "operation": "video_timeline",
+  "sources": [{ "path": "/media/demo.mkv" }],
+  "timeline": { "start_ms": 0, "end_ms": 120000, "max_scenes": 20, "caption": false }
+}
+```
+
+**Parameters:**
+
+- `end_ms` — Required. The end of the requested interval in milliseconds. The interval is half-open, positive, and at most ten minutes.
+- `start_ms` — Optional. Start of the interval in milliseconds. Defaults to the beginning of the file.
+- `max_scenes` — Maximum number of scenes to return. Defaults to 20; cannot exceed 20.
+- `caption` — Set `true` to request captions for scene representatives using the configured local-command vision adapter. Without an adapter configured, captions are unavailable. Defaults to `false`.
+
+The response includes the source SHA-256, the requested and processed time range, a mapping from container PTS to playback milliseconds, and the ordered list of scenes and subtitle cues.
+
+<Note>
+  Scenes are FFmpeg heuristic cuts (policy `ffmpeg_detected_cuts_v1_threshold_0.4`) — they represent detected visual changes, not semantic scene boundaries, and carry no confidence value. Excess cuts are coalesced into the final scene with a partial detection status. Chapters and codec keyframes are not substitutes for detected cuts.
+</Note>
+
+A single `video_timeline` request covers at most **10 minutes** of video. No model is downloaded during timeline extraction. Unknown clock alignment is reported as unavailable, not silently treated as zero.
+
+`read` and `outline` also accept the `timeline` option, so the same scenes and chapters appear as document sections and stable navigation headings — useful when you want to page through a video like a document.
+
+## Frame extraction
+
+`render_frame` decodes the exact frame at each requested timestamp and returns its SHA-256, so a citation like "at 01:17 the slide shows X" can be independently re-checked.
+
+```json
+{
+  "operation": "render_frame",
+  "sources": [{ "path": "/media/demo.mkv" }],
+  "timestamps_ms": [1031, 1500],
+  "include_image": true
+}
+```
+
+Request 1–20 positions per call. Each returned frame is the first decodable frame at or after the requested playback position within the bounded decode interval.
+
+For each frame, the result includes:
+
+- The **requested** timestamp (milliseconds)
+- The **actual decoded PTS** — what the decoder returned
+- The actual filter time base
+- Playback time, stream identity, and frame dimensions
+- **SHA-256 of the PNG** for independent verification
+
+<Note>
+  A nearest keyframe is **never** relabelled as the requested position. anymd always reports the actual decoded timestamp separately from the requested one — the two are distinct fields. No frame in the interval is silently substituted or hidden.
+</Note>
+
+**Frame size limits:**
+
+- Each frame is downscaled to at most **2 MP** and **4 MiB**.
+- The shared request budget limits aggregate work to **40 MP** and encoded output to **32 MiB** per request.
+
+A single request deadline covers admission, metadata, decoding, and any optional analysis. Frame retrieval does not run OCR or captions.
+
+## Subtitle cues in timelines
+
+Structured subtitle and ASR cues appear in the timeline response alongside scene data. Each cue retains both its start and end endpoints, overlapping and cross-cut cues, track identity, and full timing granularity. Repeated subtitle text is preserved in the structured evidence — it is not deduplicated.
+
+Forced-aligned words and 20-second ASR segments are not interchangeable representations. Sidecars are admitted separately. Unresolved WebVTT timestamp maps and malformed subtitle files (for example, a zero-length cue) become a partial `subtitles` gap with the reason recorded; the rest of the request continues. Timed ASR cues retain their playback clock — this describes the plumbing, not transcription accuracy.
+
+## Honest limits
+
+- **Scenes are heuristic, not semantic.** FFmpeg scene detection (threshold 0.4) finds visual cuts; it does not understand the content of a scene.
+- **Ten minutes per request.** A single `video_timeline` call covers at most 10 minutes of video.
+- **No model download.** Timeline extraction never downloads a model. Caption support requires a pre-configured local-command vision adapter.
+- **Unknown clock alignment stays unknown.** When container PTS to playback clock alignment cannot be determined, it is reported as unavailable — it is never silently assumed to be zero.
+
+<Tip>
+  Use `outline` with the `timeline` option to navigate video scenes as stable document sections. Scene headings and chapter markers are extracted without decoding full video content, making it efficient for orientation before requesting specific frames.
+</Tip>

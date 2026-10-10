@@ -1,0 +1,76 @@
+---
+title: "Images, Audio, and Video: OCR, Metadata, and Transcripts"
+sidebarTitle: "Media"
+description: "anymd extracts EXIF from images and runs local OCR; reads audio/video metadata, chapters, and subtitles via ffprobe/ffmpeg; transcribes speech with bundled Qwen3-ASR locally."
+---
+
+anymd treats standalone image, audio, and video files as first-class inputs alongside documents. For images it reads pixel dimensions, EXIF metadata, and optionally runs local OCR — no cloud vision API required. For audio and video it extracts duration, codec streams, chapter markers, and embedded or sidecar subtitles via `ffprobe`/`ffmpeg`. For transcription it ships a bundled speech engine that runs entirely on your machine, with no data sent to any external service.
+
+## Images
+
+anymd reads the image dimensions and all available **EXIF metadata**: camera make and model, exposure settings, capture date, and GPS coordinates when present. This is returned as structured Markdown without any external calls.
+
+For **OCR**, two options are available:
+
+- **`--ocr vlm`** — uses the doc-VLM engine (PaddleOCR-VL) after a one-time setup. Understands document layout, renders tables as Markdown, and writes formulas as LaTeX. Run `anymd setup ocr` to download and install the engine and weights (~2 GB).
+- **`--ocr tesseract`** — uses installed tesseract for fast, lightweight text extraction. No model download required; anymd lays out tesseract's word output into paragraphs and tables using the same glyph-position logic as the PDF parser.
+
+Set `ANYMD_OCR` to `vlm`, `tesseract`, or `auto` to apply a default mode without passing the flag on every invocation.
+
+```bash
+anymd scan.png --ocr
+anymd setup ocr
+```
+
+## Audio and video metadata
+
+anymd reads **duration**, **codec streams** (audio tracks, video resolution, frame rate, subtitles), **chapter markers**, and **subtitles** from audio and video files.
+
+- **`ffprobe`** is required for metadata and chapter extraction. Without it, anymd returns only the file name and size.
+- **`ffmpeg`** is required to extract **embedded subtitles** (SRT/VTT tracks muxed into the container). anymd also looks for **sidecar subtitle files** in the same directory with matching names — these are read without ffmpeg.
+
+Install both with a single command:
+
+```bash
+brew install ffmpeg          # macOS — installs ffprobe too
+apt install ffmpeg           # Debian/Ubuntu — installs ffprobe too
+```
+
+## Transcripts with Qwen3-ASR
+
+anymd ships a bundled **transcribe-cpp 0.2.4** inference runtime and uses **Qwen3-ASR-1.7B Q8_0** for speech-to-text across all languages, with automatic language detection. No external API, no Whisper dependency — the audio never leaves your machine.
+
+### Getting started
+
+```bash
+anymd talk.mp4 --download-asr-model   # download the model (2.19 GB) and transcribe
+anymd talk.mp4 --transcript            # use a cached or preinstalled model
+```
+
+**`--download-asr-model`** fetches `Qwen3-ASR-1.7B-Q8_0.gguf` (2.19 GB) into `$ANYMD_CACHE_DIR/models` (or the platform default), verifies its exact size and pinned SHA-256, and saves it atomically. Later calls verify and reuse the cached file. Passing `--download-asr-model` also implies `--transcript`.
+
+**`--transcript`** alone never downloads anything. If the model weights are missing, anymd prints an installation hint and exits cleanly.
+
+**`ANYMD_ASR_MODEL`** can point to a preinstalled copy of the same pinned model file. anymd verifies the checksum before use — other models and corrupt files are rejected, not silently substituted.
+
+### How transcription works
+
+Long audio is decoded in **20-second chunks**, keeping memory bounded regardless of file length. All timestamps refer back to the original source timeline. Digitally silent chunks are skipped automatically. If anymd encounters an inference error or detects that the output was truncated, it reports the issue rather than presenting a partial result as a complete transcript.
+
+The model is loaded once per transcript run. `ffmpeg` must be installed to extract audio from video containers.
+
+### Word timestamps with CrispASR
+
+For word-level timestamps, install the optional [CrispASR 0.8.38](https://github.com/CrispStrobe/CrispASR/releases/tag/v0.8.38) binary (`crispasr`) on your `PATH`, or point `ANYMD_ALIGNER_BIN` at it. CrispASR runs **standalone forced alignment only** using Qwen3-ForcedAligner-0.6B Q8_0 (986 MB) — it does not run ASR and does not replace transcribe-cpp. Its weights are also revision/size/SHA-256 pinned, and are fetched only on first use when `--download-asr-model` is set. Set `ANYMD_ALIGNER_MODEL` to use a preinstalled pinned copy.
+
+Supported languages for word timestamps: **en, zh, yue, ja, ko, fr, de, it, pt, ru, es**.
+
+Where CrispASR is unavailable, the language is unsupported, or alignment fails validation, anymd keeps the transcript and labels the timestamps as **segment** rather than **word**. Output always names the granularity explicitly — `word`, `segment`, or `mixed` — and includes millisecond start/end times.
+
+<Warning>
+**Japanese accuracy trade-off.** On a 200-utterance FLEURS sample, Qwen3-ASR trails the whisper-turbo benchmark control (5.93 vs 4.80 raw CER; 5.56 vs 4.59 with symmetric numeral/kana normalisation). anymd uses one speech model for all languages and accepts this gap. See the [ASR benchmarks](/guides/benchmarks) for details.
+</Warning>
+
+<Note>
+**anymd Pro** adds verifiable video timelines with per-frame attribution and frame extraction for visual analysis. See [Video timelines](/pro/video-timeline) for details.
+</Note>

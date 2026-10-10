@@ -1,0 +1,69 @@
+---
+title: "anymd CLI Options and Flags"
+sidebarTitle: "Options"
+description: "All anymd CLI flags for document conversion, pagination, OCR, audio transcription, embedded images, search filtering, and security. Includes environment variable reference."
+---
+
+anymd's flags are organised into four groups: read options that control how a document is parsed and what is returned, search options that filter and rank search results, security flags that restrict file-system access, and standard help/version flags. Most options apply to the `anymd <file>` and `anymd -` commands; search options are only meaningful with `anymd search`. Environment variables provide persistent defaults for the most commonly tuned settings so you do not have to repeat flags on every invocation.
+
+## Read options
+
+These options apply when converting a file, URL, directory, or stdin stream. They control pagination, token budgeting, OCR mode, revision markup, embedded image handling, and audio transcription.
+
+| Option | Description |
+|---|---|
+| `--node <id>` | Read the section identified by `<id>` from `anymd outline`; combine with `--cursor` to continue paging within that section |
+| `-p, --pages <spec>` | Select specific pages, slides, sheets, or chapters — e.g. `1-5,8` |
+| `-o, --output <file>` | Write the Markdown output to `<file>` instead of stdout |
+| `--max-tokens <n>` | Stop after a token budget of `<n>` and print a resume cursor. The CLI has no token limit unless this flag is set. |
+| `--cursor <cursor>` | Resume from a cursor returned by a previous `--max-tokens` run |
+| `--ocr [auto\|vlm\|tesseract]` / `--no-ocr` | Select or disable local OCR. Plain `--ocr` uses automatic mode. `vlm` requires the weights installed by `anymd setup ocr`. `--no-ocr` disables OCR entirely. |
+| `--revisions <markup\|accept\|reject>` | How Word tracked changes and comments are handled: `markup` (default) writes them as CriticMarkup; `accept` applies all changes; `reject` discards all changes — both `accept` and `reject` omit comments |
+| `--images <refs\|none>` | `refs` (default) saves images embedded in PDF, DOCX, PPTX, and EPUB files to the anymd cache and emits Markdown image references; `none` omits all embedded images |
+| `--transcript` | Transcribe audio or video with the bundled Qwen3-ASR model |
+| `--download-asr-model` | Download the pinned Qwen3-ASR weights on first use, then transcribe; implies `--transcript`; does not accept `=true`/`=false` |
+| `--front-matter` | Print a YAML front-matter block containing source, title, and page count (always emitted for certain input types) |
+
+## Search options
+
+These options are specific to the `anymd search <query> [path...]` command and control how matches are found, filtered, and ranked.
+
+| Option | Description |
+|---|---|
+| `--mode <m>` | Search mode: `auto` (default), `literal` (exact string match), or `ranked` (BM25 relevance ranking) |
+| `--glob <glob>` | Restrict the search to files matching the given glob pattern, e.g. `'*.pdf'` |
+| `--max <n>` | Maximum number of hits to return (default `20`) |
+| `-i, --case-sensitive` | Perform a case-sensitive match (default is case-insensitive) |
+| `-w, --whole-word` | Match whole words only |
+
+## Other flags
+
+| Option | Description |
+|---|---|
+| `--allow-dir=<path>` | Confine file access to the specified directory. Repeatable — pass the flag multiple times to allow access to several directories. See the [Security](/guides/security) reference for details. |
+| `-h, --help` | Show help and exit |
+| `-V, --version` | Print the version and exit |
+
+<Note>
+  `--allow-dir` is repeatable. Pass it once per trusted directory to build an explicit allowlist: `anymd mcp --allow-dir=/home/user/docs --allow-dir=/tmp/uploads`. Any path outside the listed directories will be refused, which is the recommended configuration when exposing anymd over HTTP or in multi-user environments.
+</Note>
+
+## Environment variables
+
+Environment variables set persistent defaults for both CLI and MCP server modes. A flag passed on the command line always takes precedence over the corresponding environment variable.
+
+| Variable | Description |
+|---|---|
+| `ANYMD_CACHE_DIR` | Override the directory where anymd stores its cache (OCR weights, embedded images, models). Defaults to the platform cache directory. |
+| `ANYMD_OCR` | Default OCR mode for CLI and MCP: `auto`, `vlm`, or `tesseract`. A per-request `--ocr` flag or MCP `ocr` option takes precedence. |
+| `ANYMD_BIN` | Path to the anymd binary used by integrations that need to locate it explicitly. |
+| `MCP_PDF_ALLOWED_DIRS` | Colon-separated list of directories the MCP server is permitted to read. Equivalent to passing `--allow-dir` multiple times. |
+| `MCP_TRANSPORT` | MCP transport to use: `stdio` (default) or `http`. |
+| `MCP_HTTP_HOST` | Host address the HTTP MCP transport listens on (default `127.0.0.1`). |
+| `MCP_HTTP_PORT` | Port the HTTP MCP transport listens on. |
+| `MCP_API_KEY` | Bearer token required for HTTP transport requests. Requests without a matching `Authorization: Bearer <key>` header are rejected. |
+| `MCP_CORS_ORIGIN` | Allowed CORS origin for HTTP transport responses. |
+| `ANYMD_OCR_TIMEOUT_MS` | Hard per-page subprocess deadline for OCR in milliseconds (default `300000`; range `1000`–`600000`). The worker is terminated and model memory is released when the deadline is reached. |
+| `ANYMD_OCR_MAX_TOKENS` | Maximum tokens the OCR model may generate per region (default `4096`; range `1`–`8192`). |
+| `ANYMD_PRO_TOKEN` | Authentication token for anymd Pro features. |
+| `ANYMD_NO_STAR_HINT` | Set to `1` to suppress the one-time GitHub star reminder that appears after the fifth successful interactive run. Also suppressed automatically when `CI` is set or stderr is not a terminal. |

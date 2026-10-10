@@ -1,47 +1,61 @@
 ---
-title: "Quickstart"
-description: "Begin with a guide on the fastest path to a successful outcome"
+title: "Get Started with anymd in Under a Minute"
+sidebarTitle: "Quickstart"
+description: "Add anymd to Claude Code, Cursor, VS Code, or any MCP client in one command, and convert your first document to Markdown immediately."
 ---
 
-Describe how someone begins using your product. What is the first thing they need to do? Are there any prerequisites?
-
-A quickstart should take someone from zero to using your product. They'll get a quick win and a sense of what they can accomplish.
-
-## Prerequisites
-
-Before you begin, you must have:
-
-- Requirement one (for example, Node.js 18+, a free account, an API key)
-- Requirement two (for example, a compatible device, a compatible browser, a compatible operating system)
-
-## Get started
+Getting anymd running takes a single command. One `npx` invocation registers the server with every MCP client on your machine at the same time, so your agents can read documents immediately — no API key, no account, no configuration file to hunt down.
 
 <Steps>
-  <Step title="Install">
-    Describe how to install your product or sign up.
+  <Step title="Run the setup command">
+    Open your terminal and run:
 
     ```bash
-    npm install your-package
+    npx -y @sylphx/anymd setup
     ```
+
+    This one command adds anymd to **all** MCP clients it finds on your machine at once: Claude Code, Codex, Cursor, VS Code, Claude Desktop, Windsurf, and Gemini CLI. It is safe to run again — existing entries are updated, not duplicated.
+
+    <Tip>
+      Pass `--dry-run` to preview exactly what will be written before any file is
+      touched, or `--remove` to undo all registrations cleanly.
+    </Tip>
   </Step>
-  <Step title="Configure">
-    Describe any setup or configuration needed before first use.
 
-    ```bash
-    your-cli init
-    ```
+  <Step title="Ask your agent a document question">
+    Open any registered agent (Claude Code, Cursor, etc.) and ask something that
+    requires a real document. For example:
+
+    > Summarize the results table in `papers/attention.pdf` and cite the page.
+
+    The agent calls the `read` tool and gets back Markdown with `<!-- page N -->`
+    anchors embedded — so it can cite the exact page in its answer. For a folder
+    full of files, it calls `search` first to locate the right document before
+    reading it.
   </Step>
-  <Step title="Run it">
-    Show the first thing a user does to see it working.
+
+  <Step title="Try the CLI">
+    The same binary works directly from your terminal — no agent needed. Convert
+    a document to Markdown and write it to a file:
 
     ```bash
-    your-cli start
+    anymd report.pdf > report.md
     ```
+
+    Or search for a term across every PDF in a folder:
+
+    ```bash
+    anymd search "indemnification" contracts/
+    ```
+
+    Run `anymd` with no arguments to see the full list of options, or check the
+    [CLI reference](/cli/commands) for every flag.
   </Step>
 </Steps>
 
 <Tip>
-  Give people a way to get help. This could be a link to a support page, a chat with a customer support agent, or a forum for your product.
-
-  Example: Need help? Reach out to us at [support@yourcompany.com](mailto:support@yourcompany.com).
+  Run `anymd doctor` after setup to see which optional tools anymd found on your
+  machine — such as tesseract for OCR and ffmpeg for audio and video transcripts.
+  The output lists exactly what is available and what to install if you need a
+  specific format.
 </Tip>

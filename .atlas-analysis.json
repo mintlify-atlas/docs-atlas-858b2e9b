@@ -1,0 +1,98 @@
+{
+  "projectType": "cli-tool",
+  "projectName": "anymd",
+  "projectDescription": "A fast Rust MCP server and CLI that converts any file — PDF, Word, PowerPoint, Excel, EPUB, HTML, images (OCR), and audio/video — into clean Markdown for AI agents, running fully locally with no API key.",
+  "theme": "luma",
+  "primaryColor": "#C3F53C",
+  "lightColor": "#FBFCF8",
+  "darkColor": "#0A0D07",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation"
+            ]
+          },
+          {
+            "group": "MCP Tools",
+            "pages": [
+              "tools/overview",
+              "tools/read",
+              "tools/outline",
+              "tools/search",
+              "tools/inspect"
+            ]
+          },
+          {
+            "group": "CLI",
+            "pages": [
+              "cli/commands",
+              "cli/options",
+              "cli/examples"
+            ]
+          },
+          {
+            "group": "Formats",
+            "pages": [
+              "formats/overview",
+              "formats/pdf",
+              "formats/office",
+              "formats/media"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/python",
+              "guides/security",
+              "guides/benchmarks",
+              "guides/migration"
+            ]
+          },
+          {
+            "group": "anymd Pro",
+            "pages": [
+              "pro/overview",
+              "pro/cite-check",
+              "pro/video-timeline"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Converts PDF, Word, PowerPoint, Excel, EPUB, HTML, images, audio, and video to clean Markdown in a single call",
+    "Four MCP tools: read, outline, search, and inspect — compatible with Claude Code, Cursor, VS Code, Codex, and more",
+    "Native Rust parallel processing — 212× faster than docling on benchmarks, no external models required",
+    "Local-first and private: no API key, no cloud upload, documents never leave the machine",
+    "Layout engine reconstructs reading order from glyph positions, recovers borderless tables, and handles two-column papers",
+    "Token-lean output: page anchors, front-matter headers, compact tables, and a cursor for pagination within an agent's context window",
+    "OCR via local doc-VLM (PaddleOCR-VL) or tesseract; audio/video transcripts via bundled Qwen3-ASR",
+    "Python API with LangChain and LlamaIndex loaders; installable via npm, pip, cargo, or Docker",
+    "anymd Pro adds verifiable video timelines with hashed frames and offline cite-check for PDF quote verification"
+  ],
+  "publicApiSurface": [
+    "MCP tool: read — converts a file, URL, or directory to Markdown",
+    "MCP tool: outline — returns the document heading tree with node IDs and byte ranges",
+    "MCP tool: search — finds text across files, folders, and URLs with BM25 fallback",
+    "MCP tool: inspect — render_page, extract_regions, ocr_pages, structure, compare, cite_check (Pro)",
+    "CLI: anymd <file|url|dir> — convert to Markdown on stdout",
+    "CLI: anymd outline <file|url> -- show document tree",
+    "CLI: anymd search <query> [paths] — search across files and directories",
+    "CLI: anymd setup [--dry-run] [--remove] — configure MCP clients",
+    "CLI: anymd setup ocr — download doc-VLM OCR engine and weights",
+    "CLI: anymd doctor — show version and available optional tools",
+    "CLI: anymd mcp — run MCP server on stdio",
+    "Python API: anymd.convert(source, **options) → Document",
+    "Python API: anymd.langchain.AnyMDLoader",
+    "Python API: anymd.llamaindex.AnyMDReader",
+    "Environment: ANYMD_CACHE_DIR, ANYMD_OCR, ANYMD_BIN, MCP_PDF_ALLOWED_DIRS, MCP_TRANSPORT, MCP_API_KEY"
+  ]
+}

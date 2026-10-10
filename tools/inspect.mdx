@@ -1,0 +1,132 @@
+---
+title: "inspect: Deep PDF Analysis — Render, OCR, Structure, Diff"
+sidebarTitle: "inspect"
+description: "The inspect MCP tool renders PDF pages as images, extracts regions, runs OCR, returns structured JSON with geometry, and diffs two PDF versions. Returns JSON, not Markdown."
+---
+
+The `inspect` tool gives your agent direct access to a PDF's visual and geometric layer. Where `read` turns a PDF into prose Markdown, `inspect` returns structured JSON — page geometry, bounding boxes, rendered images, element maps, and change diffs. Use `inspect` when your agent needs to verify layout, extract a table from a specific region, confirm that cited text appears at the stated coordinates, render a page for a vision model, or compare two versions of a contract. All `inspect` operations take a `sources` array of PDF descriptors and return JSON.
+
+## Operations
+
+| Operation | What it does |
+|---|---|
+| `cite_check` | **(anymd Pro)** Check a quoted passage at a page and bounding box, without a model or truth claim. See [Cite Check](/pro/cite-check). |
+| `inspect` | Return page count, document metadata, and per-page facts (dimensions, rotation, text presence, image count, etc.). |
+| `render_page` | Render one or more PDF pages to PNG images at a configurable scale. |
+| `extract_regions` | Crop bounding-box regions out of rendered pages and return them as PNG images. |
+| `ocr_pages` | Run OCR on specified pages using the configured local OCR provider. |
+| `analyze_regions` | Send cropped regions to a configured vision or region provider for analysis. |
+| `structure` | Return a structured JSON document map: elements with geometry, tables, reading order, and optional safety/trust/accessibility reports. |
+| `compare` | Page-level text diff between two local PDFs (`sources[0]` = before, `sources[1]` = after). |
+
+## Arguments
+
+| Argument | Type | Description |
+|---|---|---|
+| `operation` | string | One of the operations listed above (required). |
+| `sources` | object[] | Array of `{ path \| url, pages?, regions? }` per PDF. A region is `{ page, bounding_box: { left, bottom, right, top }, padding? }`. |
+| `profile` | string | `structure` operation only: `"fast"` (default), `"quality"`, or `"research"` (adds safety, trust, and accessibility reports). |
+| `scale` | number 0.25–4 | Render scale for `render_page` and `extract_regions`. 1.0 = 72 DPI; 2.0 = 144 DPI. |
+| `max_pages` | number 1–20 | Maximum pages to render or OCR in one call. |
+| `max_regions` | number 1–100 | Maximum regions to extract or analyse in one call. |
+| `max_pixels_per_page` | number | Pixel cap per rendered page; pages are downscaled to stay within the limit. |
+| `include_image` | boolean | Include the rendered PNG data in the JSON response alongside metadata. |
+| `ocr` | `"auto"` \| `"vlm"` \| `"tesseract"` | OCR engine for `ocr_pages`. Omit to use the configured command provider. |
+| `languages` | string[] | Tesseract language codes, e.g. `["eng", "chi_tra"]`. The doc-VLM engine detects the language automatically. |
+| `timeout_ms` | number | Time limit for calls to external tools, in milliseconds (1,000–300,000). |
+| `max_output_chars` | number | Output size cap, in characters (1,000–1,000,000). |
+
+<ParamField path="operation" type="string" required>
+  The operation to perform. Must be one of: `inspect`, `render_page`, `extract_regions`, `ocr_pages`, `analyze_regions`, `structure`, `compare`, or `cite_check` (Pro). Each operation interprets the remaining arguments differently.
+</ParamField>
+
+<ParamField path="sources" type="object[]" required>
+  An array of PDF source descriptors. Each entry is an object with:
+  - `path` or `url` (required) — a local file path or `http(s)` URL to a PDF.
+  - `pages` (optional) — an array of 1-based page numbers to operate on.
+  - `regions` (optional) — an array of region objects, each with `page` and `bounding_box: { left, bottom, right, top }`, and an optional `padding`.
+</ParamField>
+
+<ParamField path="profile" type='"fast" | "quality" | "research"'>
+  Controls the depth of the `structure` operation. `"fast"` (default) returns elements and geometry quickly. `"quality"` applies additional layout analysis passes for better table extraction and reading-order accuracy. `"research"` adds safety, trust, and accessibility analysis reports alongside the structural output.
+</ParamField>
+
+<ParamField path="scale" type="number">
+  Render scale factor for `render_page` and `extract_regions`. Accepts values between 0.25 and 4. A scale of `1` renders at 72 DPI (screen resolution). A scale of `2` renders at 144 DPI and is a good default for feeding pages to a vision model. Higher values produce larger, sharper images at the cost of increased memory and response size.
+</ParamField>
+
+<ParamField path="ocr" type='"auto" | "vlm" | "tesseract"'>
+  The OCR engine to use for `ocr_pages`. Omit this argument to use the provider configured in your anymd environment. `"tesseract"` uses the locally installed Tesseract engine; `"vlm"` uses the configured document vision-language model; `"auto"` selects among installed models.
+</ParamField>
+
+## Example calls
+
+### Render a page
+
+Render page 3 of `report.pdf` at 2× scale (144 DPI):
+
+```json
+{
+  "operation": "render_page",
+  "sources": [{ "path": "report.pdf", "pages": [3] }],
+  "scale": 2
+}
+```
+
+### Get structured JSON
+
+Extract the full document map — elements with bounding boxes, tables, and reading order — using the `quality` profile:
+
+```json
+{
+  "operation": "structure",
+  "sources": [{ "path": "report.pdf" }],
+  "profile": "quality"
+}
+```
+
+Use `"research"` profile to additionally receive safety, trust, and accessibility analysis alongside the structure output.
+
+### Diff two PDF versions
+
+Compare two versions of a contract and receive a page-level text diff. `sources[0]` is treated as the "before" document and `sources[1]` as the "after" document:
+
+```json
+{
+  "operation": "compare",
+  "sources": [{ "path": "contract-v1.pdf" }, { "path": "contract-v2.pdf" }]
+}
+```
+
+### Inspect document metadata
+
+Get page count, dimensions, rotation, and per-page facts without rendering:
+
+```json
+{
+  "operation": "inspect",
+  "sources": [{ "path": "report.pdf" }]
+}
+```
+
+### Extract a region
+
+Crop a bounding-box region from page 5 — for example, to isolate a chart or signature block:
+
+```json
+{
+  "operation": "extract_regions",
+  "sources": [{
+    "path": "report.pdf",
+    "regions": [{
+      "page": 5,
+      "bounding_box": { "left": 0.1, "bottom": 0.4, "right": 0.9, "top": 0.7 }
+    }]
+  }],
+  "include_image": true
+}
+```
+
+<Note>
+`cite_check` and `video_timeline` are **anymd Pro** operations. They require an active Pro licence. See [Cite Check](/pro/cite-check) and [Video Timeline](/pro/video-timeline) for details.
+</Note>

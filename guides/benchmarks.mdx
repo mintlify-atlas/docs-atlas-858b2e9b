@@ -1,0 +1,87 @@
+---
+title: "AgentDocBench: anymd vs docling, markitdown, marker, and More"
+sidebarTitle: "Benchmarks"
+description: "AgentDocBench tests anymd against docling, markitdown, marker, kreuzberg, unstructured, and pdftotext on 38 documents in 12 categories. anymd scores 96.4 overall, the highest."
+---
+
+**AgentDocBench** is an open, reproducible benchmark designed specifically for the "document → Markdown for agents" task. It measures what an AI agent actually needs from a converter: words verbatim, in reading order, tables intact, fast, and in as few tokens as possible. The benchmark runs anymd, Docling, Marker, MarkItDown, Kreuzberg, Unstructured, and pdftotext on the same license-clean documents on GitHub-hosted runners. The scoring is blind to which tool produced each output, the corpus and ground truth are public, and every category where anymd loses is listed in the tables below.
+
+## Leaderboard
+
+38 documents across 12 categories. Scores are 0–100; higher is better. Every failed, timed-out, or unsupported document scores 0. Overall is the mean of the category scores, so every category weighs equally.
+
+| Tool | Overall | Docs converted | Sentences | Text F1 | Reading order | Table cells F1 | Time, all docs | Output tokens |
+|---|---|---|---|---|---|---|---|---|
+| anymd | **96.4** | 38/38 | 97.7 | 97.2 | 98.8 | 92.2 | 11.5 s | 368,659 |
+| docling | 93.0 | 38/38 | 94.4 | 94.5 | 94.4 | 89.9 | 2,432.4 s | 430,148 |
+| kreuzberg | 81.7 | 38/38 | 90.1 | 96.4 | 96.8 | 38.4 | 16.0 s | 455,689 |
+| unstructured | 81.2 | 38/38 | 92.0 | 97.1 | 93.9 | 38.4 | 346.5 s | 414,333 |
+| markitdown | 76.8 | 38/38 | 73.7 | 91.7 | 85.5 | 57.2 | 75.6 s | 538,388 |
+| marker | 71.0 | 30/38 | 78.9 | 79.9 | 76.8 | 60.9 | 7,104.5 s | 277,779 |
+| pdftotext | 42.2 | 23/38 | 60.6 | 71.4 | 52.0 | 0.0 | 0.90 s | 201,448 |
+
+<Note>
+**Where anymd loses:** Reports (docling 97.7 vs 96.9); Scanned (OCR) (docling 78.4 vs 77.9); EPUB (docling 99.7 vs 98.9); HTML (kreuzberg 100.0 vs 99.6).
+</Note>
+
+## By category
+
+| Category | Docs | anymd | docling | kreuzberg | unstructured | markitdown | marker | pdftotext |
+|---|---|---|---|---|---|---|---|---|
+| Papers (math) | 3 | **96.7** | 91.5 | 82.5 | 80.3 | 74.2 | 56.7 | 83.3 |
+| Two-column papers | 3 | **98.1** | 93.1 | 70.5 | 60.8 | 47.6 | 65.0 | 75.0 |
+| Reports | 2 | 96.9 | **97.7** | 83.8 | 87.4 | 97.4 | 88.2 | 87.5 |
+| Financial tables | 4 | **95.2** | 92.4 | 70.6 | 71.9 | 65.9 | 89.5 | 74.0 |
+| Forms | 3 | **98.0** | 95.6 | 73.1 | 74.6 | 74.8 | 61.0 | 74.2 |
+| Scanned (OCR) | 3 | 77.9 | **78.4** | 62.4 | 60.5 | 0.0 | 53.3 | 0.0 |
+| CJK | 3 | **99.1** | 97.4 | 56.9 | 71.8 | 79.8 | 87.6 | 75.0 |
+| Slides | 4 | **96.0** | 93.8 | 82.0 | 84.9 | 86.5 | 91.0 | 37.5 |
+| Spreadsheets | 4 | **100.0** | 85.8 | **100.0** | 85.7 | 99.7 | 38.1 | 0.0 |
+| Word | 3 | **99.9** | 99.9 | 99.8 | 99.8 | 99.8 | 94.7 | 0.0 |
+| EPUB | 3 | 98.9 | **99.7** | 99.1 | 99.1 | 97.7 | 66.4 | 0.0 |
+| HTML | 3 | 99.6 | 90.5 | **100.0** | 98.1 | 98.1 | 60.6 | 0.0 |
+
+## Speed comparison
+
+The table below compares all tools on the 19 documents that every tool successfully converted, keeping timing comparable.
+
+| Tool | Total time | Median per document | Output tokens |
+|---|---|---|---|
+| anymd | 4.58 s | 0.04 s | 146,660 |
+| docling | 1,723.3 s | 63.9 s | 162,290 |
+| kreuzberg | 7.94 s | 0.20 s | 139,422 |
+| unstructured | 187.4 s | 7.74 s | 145,360 |
+| markitdown | 45.4 s | 2.06 s | 194,382 |
+| marker | 5,256.3 s | 161.7 s | 181,132 |
+| pdftotext | 0.66 s | 0.02 s | 147,183 |
+
+## Methodology
+
+AgentDocBench uses 38 documents across 12 categories on GitHub-hosted Linux x86_64 runners with 4 CPUs and a standard set of system packages (poppler, tesseract with Chinese and Japanese, pandoc). Every document in the corpus is public domain, CC0, CC BY, CC BY-SA, MIT-licensed, or under an open government license, and is pinned by SHA-256.
+
+Every output is normalized the same way — Unicode NFKC, Markdown and HTML markup removed, whitespace collapsed, curly quotes straightened, spaces between CJK characters dropped — and compared against the document's ground truth on four metrics:
+
+- **Sentences** — key sentences copied verbatim from the document must appear verbatim. Glued words, split columns, or dropped lines fail the sentence.
+- **Text F1** — bag-of-words F1 against a reference text. Recall drops when text is lost; precision drops when noise is added.
+- **Reading order** — headings and passage openings must appear in order. The score is the longest in-order chain divided by the number of strings.
+- **Table cells F1** — every ground-truth table row is matched to the output row with the longest in-order run of equal cells. Pipe tables and HTML tables both count; plain text scores 0.
+
+**Document score** is the mean of the metrics that apply; **category score** is the mean over its documents (failed, timed-out, or unsupported counts as 0); **overall** is the mean of the category scores. Time is wall time of a fresh process per file (start-up included), median of 3 runs after one untimed warm-up. Tokens are `o200k_base`.
+
+## Reproduce it
+
+The `bench/` directory in the repository contains the full benchmark harness, corpus manifest, ground truth, raw results, and per-tool adapters. Visit the repository to run it yourself:
+
+[**github.com/SylphxAI/anymd/tree/main/bench**](https://github.com/SylphxAI/anymd/tree/main/bench)
+
+The [Benchmark workflow](https://github.com/SylphxAI/anymd/actions/workflows/benchmark.yml) runs every tool on its own GitHub-hosted runner with the same system packages, and publishes merged results and every Markdown output as an artifact.
+
+<Note>
+**Image OCR and video benchmarks use separate datasets.**
+
+On **OmniDocBench v1.6** (1,651 page images, CVPR 2025), anymd scores **21.4** overall using `tesseract` with its default English model and no layout, table, or formula model. Vision-language models trained specifically for this task score in the 95–97 range by comparison.
+
+For **embedded video subtitles**, anymd achieves **91.7% recall (11/12 cues)** on both MP4 mov\_text and Matroska SubRip fixture sets (4 clips / 12 cues each). Direct FFmpeg retains all 12 cues; anymd's rolling-caption deduplication drops one repeated caption at a different timestamp. These are small regression fixtures, not representative film or lecture datasets.
+
+Both benchmarks are reproducible from the repository. See [`bench/omnidocbench`](https://github.com/SylphxAI/anymd/tree/main/bench/omnidocbench) and [`bench/media`](https://github.com/SylphxAI/anymd/tree/main/bench/media).
+</Note>

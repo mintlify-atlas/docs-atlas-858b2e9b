@@ -1,0 +1,91 @@
+---
+title: "anymd CLI Examples and Common Workflows"
+sidebarTitle: "Examples"
+description: "Practical anymd CLI workflows: batch PDF conversion, paginated reading of long documents, ranked search, OCR setup, and piping from stdin. All examples are real terminal commands."
+---
+
+These examples cover the most common real-world tasks you will reach for when working with anymd from the terminal: converting individual files and entire folders, paging through long documents without overwhelming a context window, navigating by section, searching across a corpus with varying levels of fuzziness, and setting up local OCR or audio transcription. Every command shown here maps directly to a real anymd flag — nothing is invented.
+
+## Convert documents
+
+The simplest use is redirecting a single file's Markdown output to a new file. Pass multiple files to get them all in one run, each separated by a Markdown header. anymd also fetches web pages and strips boilerplate, leaving only the main content.
+
+```bash
+# Single file
+anymd report.pdf > report.md
+
+# Multiple files
+anymd deck.pptx notes.docx budget.xlsx
+
+# Web page (main content only)
+anymd https://example.com/article
+
+# From stdin with OCR
+cat scan.png | anymd - --ocr
+```
+
+## Batch conversion
+
+Use a shell loop with `-o` to write each output file next to its source. This is the straightforward way to process an entire folder without piping everything to one big file.
+
+```bash
+for f in reports/*.pdf; do anymd "$f" -o "${f%.pdf}.md"; done
+```
+
+## Read long documents in chunks
+
+Set `--max-tokens` to cap how much text is returned in a single call. anymd prints a resume cursor at the end of the output. Pass that cursor back with `--cursor` to continue from exactly where you left off, with no overlap and no missed content.
+
+```bash
+anymd book.pdf --max-tokens 8000
+# ends with: Continue with cursor: "42"
+anymd book.pdf --max-tokens 8000 --cursor 42
+```
+
+## Navigate by section
+
+For structured documents, start with `anymd outline` to see the section tree and their node IDs. Then read a specific section by ID, and page through it with `--cursor` if it is longer than your token budget.
+
+```bash
+anymd outline report.pdf
+anymd report.pdf --node n1.2
+anymd report.pdf --node n1.2 --cursor 4:1200
+```
+
+## Search across files
+
+`anymd search` scans files and directories and returns matching snippets with node IDs so you can jump straight to the relevant section. Use `--mode ranked` when you do not know the exact wording. Use `-w` to avoid partial-word matches in financial or legal documents.
+
+```bash
+anymd search "indemnification" contracts/
+anymd search "how is attention scaled" papers/ --mode ranked --max 5
+anymd search "revenue" reports/ --glob '*.pdf' -w
+```
+
+## OCR and transcripts
+
+For scanned documents or images, run `anymd setup ocr` once to download the VLM engine and its weights. After that, `--ocr vlm` converts table regions to Markdown and formula regions to display LaTeX. Plain `--ocr` (or `ANYMD_OCR=auto`) uses the installed VLM models if available and falls back to Tesseract. For audio and video, `--download-asr-model` fetches the Qwen3-ASR weights on first use.
+
+```bash
+anymd setup ocr            # one-time: install VLM engine (~2 GB)
+anymd scan.pdf --ocr vlm   # use VLM (tables as Markdown, formulas as LaTeX)
+anymd scan.pdf --ocr       # auto: use installed models or tesseract
+anymd talk.mp4 --download-asr-model  # download Qwen3-ASR and transcribe
+anymd talk.mp4 --transcript          # use already-installed ASR model
+```
+
+## HTTP transport for MCP
+
+By default, anymd's MCP server runs over stdio. Set `MCP_TRANSPORT=http` to expose it over HTTP instead, then configure the host, port, and an API key for authentication. This is useful when your MCP client and the anymd server run on different machines or in separate containers.
+
+```bash
+MCP_TRANSPORT=http \
+MCP_HTTP_HOST=0.0.0.0 \
+MCP_HTTP_PORT=8080 \
+MCP_API_KEY=my-secret-token \
+anymd mcp --allow-dir=/data
+```
+
+<Tip>
+  Set `ANYMD_NO_STAR_HINT=1` in your CI environment to suppress the one-time GitHub star reminder that anymd prints after its fifth successful interactive run. anymd already silences the hint when the `CI` environment variable is set or when stderr is not a terminal, but the explicit flag is a reliable belt-and-suspenders option for any automated pipeline.
+</Tip>

@@ -1,0 +1,84 @@
+---
+title: "PDF to Markdown: Layout Engine, Tables, and OCR"
+sidebarTitle: "PDF"
+description: "anymd converts PDFs to reading-order Markdown using a glyph-position layout engine. Handles two-column papers, borderless tables, page anchors, and optional doc-VLM OCR for scans."
+---
+
+anymd converts PDFs to reading-order Markdown — headings, paragraphs, lists, tables, sub/superscripts, `<!-- page N -->` anchors, and bookmarks assembled into an outline. Running headers, page numbers, and text a reader cannot see are stripped automatically. The result is clean prose that language models can read without fighting around artefacts.
+
+## How it works
+
+anymd's PDF parser reads **glyph positions** rather than text runs. This low-level approach lets it reconstruct reading order accurately for the layouts where text-run extraction typically breaks down — two-column academic papers, mixed-width magazine layouts, and tables without drawn borders.
+
+The pipeline at each stage:
+
+- **Line grouping.** Glyphs are grouped into lines by baseline. The tolerance for baseline variation is wide enough to keep superscripts and subscripts on the line they belong to.
+- **Word spacing.** Word boundaries come from the gaps between adjacent glyphs, measured against the font size and adjusted for the font's letter tracking. This avoids both run-together words and phantom spaces inside ligatures.
+- **Column detection.** A column-aware XY cut finds the gutters between running-text columns before lines are threaded into paragraphs. Multi-column papers and side-by-side text blocks are handled without manual hints.
+- **Table detection.** Tables with drawn rules are detected from their line geometry: a missing line between two cells is treated as a merged cell. Tables without drawn rules are found from columns of aligned whitespace, so borderless data grids come through as proper Markdown tables rather than ragged prose.
+- **Cell merges and stacked headers.** Wrapped cell text stays in its cell. Stacked header lines are joined into one header row. A header that spans several columns is repeated with each column it covers.
+- **Invisible text excluded.** Text rendered in the colour of its background, or with a rendering mode that makes it invisible, is left out entirely.
+- **Parallel isolation.** Pages are processed in parallel and isolated from each other. One malformed page never aborts the rest of the document.
+
+## Output format
+
+Every page boundary becomes a comment anchor. Bookmarks from the PDF's outline become headings. The YAML front matter carries the source path, inferred title, page count, and the page range included in this response:
+
+```markdown
+---
+source: papers/attention.pdf
+title: Attention Is All You Need
+pages: 15
+showing: pages 1-9
+---
+
+<!-- page 1 -->
+
+# Attention Is All You Need
+…
+```
+
+Tables are rendered in standard Markdown pipe syntax. Page anchors let downstream tools link back to the original PDF with a page number.
+
+<Note>
+For geometry, bounding boxes, or a JSON representation of the document structure, use the `inspect` tool with `operation: "structure"`. It lists every page's embedded images, their position in points (origin bottom-left), size, caption, and cached file path — without producing prose output.
+</Note>
+
+## Scanned PDFs and OCR
+
+A native PDF has a text layer anymd can parse directly. A scanned PDF — one where each page is a photograph with no text layer — needs OCR.
+
+**Doc-VLM (recommended for accuracy).** Run `anymd setup ocr` to download and install the PaddleOCR-VL engine and weights (~2 GB). Once installed, pass `--ocr vlm` to process scanned pages: the VLM understands layout boxes and reading order, renders tables as Markdown, and writes formulas as LaTeX. Model workers run one page at a time to keep memory bounded.
+
+**Tesseract (fast and lightweight).** If tesseract is on your `PATH`, pass `--ocr tesseract`. anymd lays out tesseract's word output the same way it lays out native text — paragraphs, tables, and structure are reconstructed from word positions. Tesseract pages run in parallel and no model download is required.
+
+**Automatic fallback.** `--ocr auto` uses the doc-VLM engine if it is installed, otherwise falls back to tesseract. This is useful for pipelines that run on machines with varying OCR setups.
+
+Set the `ANYMD_OCR` environment variable to `vlm`, `tesseract`, or `auto` to make a mode the default for all runs without passing the flag every time.
+
+## Page selection
+
+Use `--pages` to process a subset of pages and keep the response within a token budget:
+
+```bash
+anymd paper.pdf --pages 1-5,8
+```
+
+Ranges are comma-separated. A single number selects one page. Ranges can be combined freely — `1,3-5,9-12` selects pages 1, 3, 4, 5, 9, 10, 11, and 12.
+
+## Embedded images
+
+Figures and illustrations inside a PDF are exported automatically. anymd writes each image once to the cache directory (`$ANYMD_CACHE_DIR/images`, or the platform default under `~/.cache/anymd`), named by the first 16 hex digits of its SHA-256 hash, and inserts a reference in the Markdown at the image's reading-order position:
+
+```markdown
+![Figure 3: Encoder–decoder attention weights](/home/me/.cache/anymd/images/9f2c1a7be03d55a4.png)
+<!-- image: 480x360, page 4 -->
+```
+
+**Captions** are detected from the nearest line directly above or below the image (within about half an inch) that starts with `Figure`, `Fig.`, `Table`, `圖`, `图`, or `表` followed by a number.
+
+**Decorative images are skipped.** Images smaller than 48 × 48 px, PDF images that cover less than 2% of their page, and any picture that appears on three or more pages (logos, running ornaments) are not exported.
+
+**Scanned pages are not figures.** A page with no usable text layer and a single image covering at least 80% of the page area is treated as the page itself — it goes to OCR rather than producing an image reference.
+
+**Supported image types.** JPEG images are written as-is. 8-bit grayscale, RGB, and palette rasters become PNG. CMYK, JPEG 2000, JBIG2, CCITT, and vector graphics (charts or diagrams drawn from lines and text) are not currently exported.

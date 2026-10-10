@@ -1,0 +1,57 @@
+---
+title: "anymd: Any File to Clean Markdown for AI Agents"
+sidebarTitle: "Introduction"
+description: "anymd is a local Rust MCP server and CLI that converts PDF, Word, Excel, EPUB, HTML, images, and audio to Markdown for AI agents. No API key required."
+---
+
+anymd is a fast, local Rust binary that converts any document — PDF, Word, PowerPoint, Excel, EPUB, HTML, images, audio, and video — into clean Markdown that AI agents can read, cite, and reason over. It runs entirely on your machine with no API key and no account. Developers reach for anymd when they want their agents to work directly with real documents: research papers, financial reports, slide decks, contracts, and entire folder trees, all through a single MCP tool call or one shell command.
+
+## Key capabilities
+
+<CardGroup cols={2}>
+  <Card title="212× faster than docling" icon="bolt">
+    Native Rust converts documents in parallel, page by page. On 38 benchmark
+    documents anymd finishes in **11.5 s**; docling takes **2,432.4 s** on the
+    same set.
+  </Card>
+  <Card title="96.4 benchmark score" icon="trophy">
+    anymd leads the [AgentDocBench](https://sylphxai.github.io/anymd/guide/benchmarks)
+    leaderboard with a **96.4** overall score — the highest recorded across
+    accuracy, table cells F1, and reading order.
+  </Card>
+  <Card title="Local and private" icon="lock">
+    Nothing is uploaded. OCR uses local doc-VLM models or installed tesseract;
+    transcripts use bundled Qwen3-ASR. Every document stays on your machine.
+  </Card>
+  <Card title="Every format, one call" icon="files">
+    One MCP tool reads every supported format — plus web URLs and whole
+    directories. `search` looks across all of them at once.
+  </Card>
+</CardGroup>
+
+## Two modes, one binary
+
+**MCP server** — the primary mode for AI agents. When an MCP client such as Claude Code, Cursor, or VS Code starts anymd, it exposes four tools: `read`, `search`, `outline`, and `inspect`. Agents call `read` to convert a document and get back paginated Markdown with `<!-- page N -->` citation anchors, or `search` to find text across an entire folder of mixed formats. The server runs over stdio with no network service to configure.
+
+**CLI** — the same binary doubles as a command-line converter. Pipe a file in and Markdown comes out. It accepts multiple files at once, reads from stdin, fetches web URLs, and supports every option available to the MCP tools. No agent required — just your terminal.
+
+## Explore further
+
+<CardGroup cols={2}>
+  <Card title="MCP Tools" icon="wrench" href="/tools/overview">
+    Learn what `read`, `search`, `outline`, and `inspect` do, and how to pass
+    pages, token budgets, cursors, and OCR options.
+  </Card>
+  <Card title="CLI Commands" icon="terminal" href="/cli/commands">
+    Full reference for every CLI flag, including `--pages`, `--max-tokens`,
+    `--glob`, `--ocr`, and `anymd doctor`.
+  </Card>
+</CardGroup>
+
+<Note>
+  anymd is free and open source under the **MIT license**. **anymd Pro** (US$29,
+  one-time) adds two features for agents that must show their evidence: video
+  timelines with exact hashed frames and cite-check, which verifies a quote at a
+  page and location in a PDF. Nothing that was free has moved to Pro. [Learn more
+  about anymd Pro](https://sylphxai.github.io/anymd/pro).
+</Note>

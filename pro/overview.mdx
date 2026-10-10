@@ -1,0 +1,79 @@
+---
+title: "anymd Pro: Verifiable Video Evidence and Cite-Check"
+sidebarTitle: "Overview"
+description: "anymd Pro adds two operations for agents that must prove their sources: exact video frames with timestamps and hashes, and cite-check to verify a PDF quote at its claimed location. US$29 once."
+---
+
+**anymd Pro** adds two capabilities to the free anymd MCP server and CLI: verifiable video timelines with exact decoded frames, and cite-check, which confirms that a quoted passage occurs in a PDF at the stated page and bounding box. Both run entirely on your machine. Pro is aimed at agents and people who need to point at a source and be believed — legal review, research, finance, and media work.
+
+<Note>
+  The anymd core remains MIT licensed and completely free. Reading, outlining, searching, and inspecting documents, OCR, transcripts, the MCP server, and the CLI are all free and ungated. Nothing that was free has moved to Pro. Ordinary `read` and `outline` of video (metadata, chapters, subtitles) are still free.
+</Note>
+
+## What Pro adds
+
+<CardGroup cols={2}>
+  <Card title="Video Timelines" icon="film" href="/pro/video-timeline">
+    A bounded, hashed video timeline with FFmpeg-detected scenes and subtitle cues, plus `render_frame` for exact decoded frames with SHA-256 — so a citation like "at 01:17 the slide shows X" can be re-checked.
+  </Card>
+  <Card title="Cite-Check" icon="circle-check" href="/pro/cite-check">
+    `cite_check` takes a PDF and a list of citations — quote, page, and bounding box — and returns a verdict for each: `verified_exact`, `verified_normalized`, `unmatched`, or `insufficient_evidence`.
+  </Card>
+</CardGroup>
+
+## Pricing
+
+**US$29 once, including any applicable tax.** No subscription. One licence per person, no expiry, future releases included. Instant delivery after payment — copy your licence token from the checkout confirmation page; a retrieval link is also emailed to you. Pro works offline and requires no account.
+
+Run `anymd pro buy` from your terminal to open the Pro page. In-terminal purchase turns on when the checkout service is live.
+
+## Activate
+
+Run once after purchase to save your licence on the machine:
+
+```bash
+anymd pro activate '<your token>'
+anymd pro status
+```
+
+Or supply the token through an environment variable instead:
+
+```bash
+export ANYMD_PRO_TOKEN='<your token>'
+```
+
+The environment variable wins over the saved licence file when both are present. `anymd pro status` shows whether Pro is active and which version is running — it never prints the token.
+
+## FAQ
+
+<Accordion title="Does it work offline? Do I need an account?">
+  Pro works fully offline and requires no account. Your licence is checked on your machine against a public key built into anymd. Nothing is sent anywhere when you use Pro features.
+</Accordion>
+
+<Accordion title="Is the core still free?">
+  Yes. anymd stays MIT licensed. Reading, outlining, searching, and inspecting documents, OCR, transcripts, the MCP server, and the CLI all remain free and ungated. Nothing that was previously free has moved behind a licence.
+</Accordion>
+
+<Accordion title="What happens without a licence?">
+  A Pro operation returns a short message with a link to the Pro page and does no work. Nothing else changes — all free operations continue as normal.
+</Accordion>
+
+<Accordion title="Which version do I need?">
+  anymd 8.4.0 or later. Run `anymd pro status` to see whether Pro is active on your current install.
+</Accordion>
+
+<Accordion title="Can my team use one licence?">
+  A licence is for one person. Buy one licence for each person on your team who uses Pro features.
+</Accordion>
+
+<Accordion title="Who sells it?">
+  Sylphx Limited, a company registered in England and Wales (company number 16438428).
+</Accordion>
+
+<Note>
+  anymd Pro requires anymd **8.4.0 or later**. Check your installed version with:
+
+  ```bash
+  npx -y @sylphx/anymd@latest --version
+  ```
+</Note>
