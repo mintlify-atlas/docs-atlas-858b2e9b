@@ -1,7 +1,7 @@
 ---
 title: "Video Timelines and Frame Extraction for AI Agents"
 sidebarTitle: "Video Timeline"
-description: "anymd Pro's video_timeline operation returns a bounded, hashed video timeline with scenes and subtitle cues. render_frame extracts exact decoded frames with SHA-256 for verifiable citations."
+description: "Pass operation: video_timeline to inspect for a source-hashed scene timeline. Use render_frame for exact decoded frames with SHA-256. Requires anymd Pro."
 ---
 
 When an agent summarises a deposition video, an earnings call, a lecture, or any recorded media, there is normally no way to check its work. anymd Pro's video timeline operations give agents something verifiable to cite: a bounded, source-hashed timeline of scenes and subtitle cues, and exact decoded frames tied to specific timestamps and SHA-256 hashes. These operations are designed for legal review, research, finance, and media work — anywhere a citation needs to hold up to scrutiny. Both `video_timeline` and `render_frame` are part of anymd Pro.
@@ -12,7 +12,7 @@ When an agent summarises a deposition video, an earnings call, a lecture, or any
 
 ## Video timeline
 
-The `video_timeline` operation returns an ordered, bounded timeline for a video: FFmpeg-detected scene cuts, chapters, and structured subtitle or transcript cues, all tied to the source file's SHA-256.
+Pass `operation: "video_timeline"` to `inspect` to get an ordered, bounded timeline for a video: FFmpeg-detected scene cuts, chapters, and structured subtitle or transcript cues, all tied to the source file's SHA-256.
 
 ```json
 {

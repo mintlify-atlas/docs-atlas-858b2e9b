@@ -1,7 +1,7 @@
 ---
-title: "Supported File Formats and What anymd Extracts"
+title: "Supported File Formats: What anymd Reads and Returns"
 sidebarTitle: "Overview"
-description: "anymd reads 15+ file formats natively in Rust — PDF, Word, PowerPoint, Excel, EPUB, HTML, images, audio, and video — no Python, LibreOffice, or cloud service required."
+description: "anymd reads PDF, Word, PowerPoint, Excel, EPUB, HTML, images, audio, and video natively in Rust — no Python, LibreOffice, or cloud service required."
 ---
 
 One `read` call handles every format listed below. anymd detects the file type from its bytes, not its name, so renamed or extension-less files work without any hint. Every parser is native Rust — zip/XML, calamine, html5ever — with no Python subprocess, no LibreOffice bridge, and no data leaving your machine.
@@ -15,6 +15,7 @@ One `read` call handles every format listed below. anymd detects the file type f
 | PowerPoint `.pptx` | One section per slide, with speaker notes and chart data |
 | Excel `.xlsx .xls .ods` · CSV/TSV | One Markdown table per sheet |
 | EPUB | One section per chapter in spine order |
+| Embedded images | Figures and pictures inside PDF, DOCX, PPTX, and EPUB — saved to cache and marked in place |
 | HTML and URLs | Main article only — navigation and banners stripped |
 | Markdown, text, JSON | Returned unchanged, with pagination |
 | Images | Dimensions, EXIF metadata, and OCR text |

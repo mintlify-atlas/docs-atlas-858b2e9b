@@ -1,7 +1,7 @@
 ---
-title: "Use anymd from Python: API, LangChain, and LlamaIndex"
+title: "anymd Python API, LangChain, and LlamaIndex Loaders"
 sidebarTitle: "Python API"
-description: "anymd's Python wheel includes a convert() function plus LangChain and LlamaIndex document loaders. Requires anymd 8.3.0+; conversion runs in the same native Rust binary."
+description: "anymd's Python wheel ships a convert() function and LangChain and LlamaIndex loaders. Requires anymd 8.3.0+; conversion runs in the native Rust binary."
 ---
 
 The anymd platform wheel contains the native CLI and a thin Python API. Conversion runs in the same Rust binary as the CLI — Python does not implement a converter. The base package uses only the Python standard library and supports Python 3.8 or newer. anymd 8.3.0 platform wheels include this API; older CLI-only wheels do not provide these imports.
@@ -84,6 +84,7 @@ from anymd.langchain import AnyMDLoader
 
 loader = AnyMDLoader("report.pdf", pages="1-3", timeout=30)
 documents = loader.load()
+# Or: for document in loader.lazy_load(): ...
 print(documents[0].page_content)
 print(documents[0].metadata["source"])
 ```
@@ -102,6 +103,7 @@ from anymd.llamaindex import AnyMDReader
 reader = AnyMDReader(pages="1-3", timeout=30)
 documents = reader.load_data("report.pdf", extra_info={"collection": "reports"})
 print(documents[0].text)
+print(documents[0].metadata["source"])
 ```
 
 `AnyMDReader` extends `llama_index.core`'s `BaseReader` and returns one LlamaIndex `Document` per `load_data` call. It accepts `file` as a positional or keyword argument and merges optional `extra_info`.

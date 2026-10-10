@@ -1,7 +1,7 @@
 ---
-title: "Migrate from pdf-reader-mcp or Citra to anymd"
+title: "How to Migrate to anymd from pdf-reader-mcp or Citra"
 sidebarTitle: "Migration"
-description: "anymd was formerly pdf-reader-mcp and Citra. Old configs still work — this guide covers the package rename, new tool names (read/search/inspect), and the new Markdown output format."
+description: "anymd was formerly pdf-reader-mcp and Citra. Old configs still work. Covers the package rename, tool renames (read, search, inspect), and Markdown output."
 ---
 
 anymd was originally called **pdf-reader-mcp**, then renamed to **Citra** before settling on its current name. Existing setups keep working without any changes — the old packages are thin aliases published at the same version that run the anymd binary underneath. For new installs, and to get a shorter server name in your MCP client, switch to `npx -y @sylphx/anymd`.
@@ -10,13 +10,15 @@ anymd was originally called **pdf-reader-mcp**, then renamed to **Citra** before
 
 | Before | Now |
 |---|---|
-| `npx -y @sylphx/pdf-reader-mcp` | `npx -y @sylphx/anymd` |
-| `npx -y @sylphx/citra` | `npx -y @sylphx/anymd` |
-| MCP registry `io.github.SylphxAI/pdf-reader-mcp` | `io.github.SylphxAI/anymd` |
-| `CITRA_RUST_BIN` | `ANYMD_BIN` |
+| `npx -y @sylphx/pdf-reader-mcp` (bin `pdf-reader-mcp`) | `npx -y @sylphx/anymd` (bin `anymd`) |
+| `npx -y @sylphx/citra` (bin `citra`) | `npx -y @sylphx/anymd` |
+| MCP registry `io.github.SylphxAI/pdf-reader-mcp`, `io.github.SylphxAI/citra` | `io.github.SylphxAI/anymd` |
+| `@sylphx/citra-<platform>` native packages | `@sylphx/anymd-<platform>` |
+| `CITRA_RUST_BIN` | `ANYMD_BIN` (`ANYMD_RUST_BIN` still works) |
+| SDK `@sylphx/anymd/sdk` (class `Anymd` or `Citra`) | Removed in 8.0.0. Run the `anymd` CLI, or connect to `anymd mcp` with an MCP client |
 
 <Note>
-`@sylphx/pdf-reader-mcp` and `@sylphx/citra` are published at the same version as thin aliases — they simply invoke anymd. Old configs need no change. `ANYMD_RUST_BIN` also still works as an alias for `ANYMD_BIN`.
+`@sylphx/pdf-reader-mcp` and `@sylphx/citra` are published at the same version as thin aliases — they simply invoke anymd. Old configs need no change.
 </Note>
 
 ## Tool names
@@ -25,7 +27,7 @@ anymd was originally called **pdf-reader-mcp**, then renamed to **Citra** before
 |---|---|
 | `read_pdf` | `read` |
 | `search_pdf` | `search` |
-| `pdf_evidence` | `inspect` |
+| `pdf_evidence` | `inspect` (same operations) |
 | `pdf_compare` | `inspect` with `operation: "compare"` |
 
 <Note>
@@ -58,7 +60,3 @@ If you relied on the structured JSON result — document map, elements with boun
 ```
 
 Use `inspect` with `operation: "structure"` and a `profile` of `fast` (default), `quality`, or `research`. The legacy `read_pdf` tool also still returns JSON when you pass a `profile` argument or any `include_*` flag; a plain `read_pdf` call with only `sources` now returns Markdown instead.
-
-<Note>
-**The `@sylphx/anymd/sdk` package was removed in 8.0.0.** The TypeScript SDK (exported as class `Anymd` or `Citra`) is no longer available. Use the `anymd` CLI directly, or connect to `anymd mcp` using any MCP client library instead.
-</Note>

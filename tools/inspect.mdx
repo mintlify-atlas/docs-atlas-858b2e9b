@@ -1,7 +1,7 @@
 ---
 title: "inspect: Deep PDF Analysis — Render, OCR, Structure, Diff"
 sidebarTitle: "inspect"
-description: "The inspect MCP tool renders PDF pages as images, extracts regions, runs OCR, returns structured JSON with geometry, and diffs two PDF versions. Returns JSON, not Markdown."
+description: "The inspect MCP tool renders PDF pages, extracts regions, runs OCR, returns structured JSON geometry, and diffs two PDF versions — all as structured JSON."
 ---
 
 The `inspect` tool gives your agent direct access to a PDF's visual and geometric layer. Where `read` turns a PDF into prose Markdown, `inspect` returns structured JSON — page geometry, bounding boxes, rendered images, element maps, and change diffs. Use `inspect` when your agent needs to verify layout, extract a table from a specific region, confirm that cited text appears at the stated coordinates, render a page for a vision model, or compare two versions of a contract. All `inspect` operations take a `sources` array of PDF descriptors and return JSON.
@@ -128,5 +128,5 @@ Crop a bounding-box region from page 5 — for example, to isolate a chart or si
 ```
 
 <Note>
-`cite_check` and `video_timeline` are **anymd Pro** operations. They require an active Pro licence. See [Cite Check](/pro/cite-check) and [Video Timeline](/pro/video-timeline) for details.
+`cite_check`, `video_timeline`, and `render_frame` are **anymd Pro** operations. They require an active Pro licence. See [Cite Check](/pro/cite-check) and [Video Timeline](/pro/video-timeline) for details.
 </Note>

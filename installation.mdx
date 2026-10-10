@@ -1,5 +1,5 @@
 ---
-title: "Install anymd: npm, pip, Docker, or Cargo"
+title: "Install anymd: npm, pip, Docker, or Cargo (Rust 1.95+)"
 sidebarTitle: "Installation"
 description: "Install the anymd native binary via npm (Node 18+), Python pip/uvx, Docker (amd64/arm64), or build from source with Cargo on Rust 1.95+."
 ---
@@ -148,6 +148,14 @@ To restrict the server to a specific directory, add `--allow-dir`:
 
 ```json
 { "command": "npx", "args": ["-y", "@sylphx/anymd", "--allow-dir=/path/to/docs"] }
+```
+
+## Check optional tools
+
+After installing, run `anymd doctor` to see which optional tools anymd found on your machine — tesseract for OCR, ffmpeg and ffprobe for audio and video. The output lists exactly what is available and what to install if you need a specific format.
+
+```bash
+anymd doctor
 ```
 
 ## Verify a download

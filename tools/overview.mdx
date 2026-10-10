@@ -1,7 +1,7 @@
 ---
-title: "anymd MCP Tools: read, outline, search, inspect"
+title: "anymd MCP Tools — read, outline, search, and inspect"
 sidebarTitle: "Overview"
-description: "anymd exposes four MCP tools your agent calls directly: read converts documents to Markdown, outline navigates structure, search finds text, and inspect goes deep on PDFs."
+description: "anymd exposes four MCP tools — read, outline, search, and inspect — that agents call directly over MCP to convert, navigate, find, and analyse documents."
 ---
 
 anymd exposes four MCP tools that AI agents call directly over the MCP protocol via stdio. Each tool is registered when you start the anymd MCP server — your MCP client (Claude Desktop, a custom agent, or any MCP-compatible framework) discovers them automatically through the standard `tools/list` handshake and invokes them by name with JSON arguments. No model, vector database, or external API key is required to use `outline`, `read`, or `search`; `inspect` operations that call external vision providers require the appropriate provider to be configured.

@@ -1,7 +1,7 @@
 ---
-title: "anymd CLI Options and Flags"
+title: "anymd CLI Options, Flags, and Environment Variables"
 sidebarTitle: "Options"
-description: "All anymd CLI flags for document conversion, pagination, OCR, audio transcription, embedded images, search filtering, and security. Includes environment variable reference."
+description: "All anymd CLI flags: pagination, OCR, transcription, image handling, search filters, and security. Includes every supported environment variable."
 ---
 
 anymd's flags are organised into four groups: read options that control how a document is parsed and what is returned, search options that filter and rank search results, security flags that restrict file-system access, and standard help/version flags. Most options apply to the `anymd <file>` and `anymd -` commands; search options are only meaningful with `anymd search`. Environment variables provide persistent defaults for the most commonly tuned settings so you do not have to repeat flags on every invocation.
@@ -56,14 +56,15 @@ Environment variables set persistent defaults for both CLI and MCP server modes.
 |---|---|
 | `ANYMD_CACHE_DIR` | Override the directory where anymd stores its cache (OCR weights, embedded images, models). Defaults to the platform cache directory. |
 | `ANYMD_OCR` | Default OCR mode for CLI and MCP: `auto`, `vlm`, or `tesseract`. A per-request `--ocr` flag or MCP `ocr` option takes precedence. |
-| `ANYMD_BIN` | Path to the anymd binary used by integrations that need to locate it explicitly. |
+| `ANYMD_BIN` | Path to the anymd binary used by integrations that need to locate it explicitly. `ANYMD_RUST_BIN` is a supported alias and still works. |
 | `MCP_PDF_ALLOWED_DIRS` | Colon-separated list of directories the MCP server is permitted to read. Equivalent to passing `--allow-dir` multiple times. |
 | `MCP_TRANSPORT` | MCP transport to use: `stdio` (default) or `http`. |
 | `MCP_HTTP_HOST` | Host address the HTTP MCP transport listens on (default `127.0.0.1`). |
-| `MCP_HTTP_PORT` | Port the HTTP MCP transport listens on. |
-| `MCP_API_KEY` | Bearer token required for HTTP transport requests. Requests without a matching `Authorization: Bearer <key>` header are rejected. |
+| `MCP_HTTP_PORT` | Port the HTTP MCP transport listens on (default `8080`). |
+| `MCP_API_KEY` | API key required for HTTP transport requests. Requests without a matching `X-API-Key` header are rejected. |
 | `MCP_CORS_ORIGIN` | Allowed CORS origin for HTTP transport responses. |
 | `ANYMD_OCR_TIMEOUT_MS` | Hard per-page subprocess deadline for OCR in milliseconds (default `300000`; range `1000`–`600000`). The worker is terminated and model memory is released when the deadline is reached. |
 | `ANYMD_OCR_MAX_TOKENS` | Maximum tokens the OCR model may generate per region (default `4096`; range `1`–`8192`). |
 | `ANYMD_PRO_TOKEN` | Authentication token for anymd Pro features. |
 | `ANYMD_NO_STAR_HINT` | Set to `1` to suppress the one-time GitHub star reminder that appears after the fifth successful interactive run. Also suppressed automatically when `CI` is set or stderr is not a terminal. |
+| `CI` | When set (any value), suppresses the GitHub star reminder automatically. Standard in most CI environments; no need to also set `ANYMD_NO_STAR_HINT`. |

@@ -1,7 +1,7 @@
 ---
-title: "anymd Security: Local-First, URL Guards, and File Confinement"
+title: "anymd Security: Local-First, URL Guards, File Confinement"
 sidebarTitle: "Security"
-description: "anymd keeps documents local, blocks SSRF-style URL fetches to private addresses, supports directory confinement with --allow-dir, and parses all formats in sandboxed Rust."
+description: "anymd keeps documents local, blocks SSRF URL fetches to private addresses, confines file access with --allow-dir, and parses all formats in sandboxed Rust."
 ---
 
 anymd is local-first by design. Documents never leave your machine unless you explicitly pass a URL — and even then only that specific URL is fetched. No account, API key, or cloud service is involved in any conversion.

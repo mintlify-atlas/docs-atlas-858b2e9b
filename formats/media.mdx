@@ -1,7 +1,7 @@
 ---
 title: "Images, Audio, and Video: OCR, Metadata, and Transcripts"
 sidebarTitle: "Media"
-description: "anymd extracts EXIF from images and runs local OCR; reads audio/video metadata, chapters, and subtitles via ffprobe/ffmpeg; transcribes speech with bundled Qwen3-ASR locally."
+description: "anymd reads image EXIF and runs OCR; extracts audio/video metadata, chapters, and subtitles via ffprobe/ffmpeg; transcribes with bundled Qwen3-ASR locally."
 ---
 
 anymd treats standalone image, audio, and video files as first-class inputs alongside documents. For images it reads pixel dimensions, EXIF metadata, and optionally runs local OCR — no cloud vision API required. For audio and video it extracts duration, codec streams, chapter markers, and embedded or sidecar subtitles via `ffprobe`/`ffmpeg`. For transcription it ships a bundled speech engine that runs entirely on your machine, with no data sent to any external service.
@@ -18,8 +18,9 @@ For **OCR**, two options are available:
 Set `ANYMD_OCR` to `vlm`, `tesseract`, or `auto` to apply a default mode without passing the flag on every invocation.
 
 ```bash
-anymd scan.png --ocr
-anymd setup ocr
+anymd setup ocr                    # download and install doc-VLM engine and weights (~2 GB)
+anymd scan.png --ocr vlm           # use doc-VLM after setup
+anymd scan.png --ocr tesseract     # use installed tesseract — no download required
 ```
 
 ## Audio and video metadata
@@ -47,7 +48,7 @@ anymd talk.mp4 --download-asr-model   # download the model (2.19 GB) and transcr
 anymd talk.mp4 --transcript            # use a cached or preinstalled model
 ```
 
-**`--download-asr-model`** fetches `Qwen3-ASR-1.7B-Q8_0.gguf` (2.19 GB) into `$ANYMD_CACHE_DIR/models` (or the platform default), verifies its exact size and pinned SHA-256, and saves it atomically. Later calls verify and reuse the cached file. Passing `--download-asr-model` also implies `--transcript`.
+**`--download-asr-model`** fetches `Qwen3-ASR-1.7B-Q8_0.gguf` (2.19 GB) into `$ANYMD_CACHE_DIR/models` (or the platform default), verifies its exact size and pinned SHA-256, and saves it atomically. Later calls verify and reuse the cached file. Passing `--download-asr-model` also implies `--transcript`. This flag is a **presence switch** — pass it without a value to grant permission. Inline values such as `--download-asr-model=false` are rejected rather than silently granting or denying the download.
 
 **`--transcript`** alone never downloads anything. If the model weights are missing, anymd prints an installation hint and exits cleanly.
 

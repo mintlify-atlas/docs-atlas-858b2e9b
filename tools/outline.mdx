@@ -1,7 +1,7 @@
 ---
 title: "outline: Navigate Document Structure Without Reading It"
 sidebarTitle: "outline"
-description: "The outline MCP tool returns a document's heading tree with stable node IDs and byte ranges, letting your agent navigate long PDFs, EPUB chapters, or slide decks efficiently."
+description: "The outline MCP tool builds a heading tree with node IDs and byte ranges, letting your agent navigate long PDFs, EPUB chapters, or slide decks efficiently."
 ---
 
 The `outline` tool returns a document's full heading tree before you commit to reading it. Each node carries a stable ID, a title, its depth in the hierarchy, the range of pages or chapters it spans, and a precise byte range into the canonical Markdown body — so your agent can jump straight to the relevant section with a `node` read rather than paginating through the entire document. No model, vector database, or API key is required; anymd builds the outline entirely from the document's own structure.

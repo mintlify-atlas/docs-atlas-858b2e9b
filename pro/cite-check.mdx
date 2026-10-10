@@ -1,7 +1,7 @@
 ---
 title: "Cite-Check: Verify a PDF Quote at Its Claimed Location"
 sidebarTitle: "Cite-Check"
-description: "cite_check verifies whether a quoted passage occurs in a PDF at the stated page and bounding box. Returns verified_exact, verified_normalized, unmatched, or insufficient_evidence."
+description: "cite_check verifies a PDF quote at its claimed page and bounding box. Verdicts: verified_exact, verified_normalized, unmatched, insufficient_evidence. Pro."
 ---
 
 `cite_check` checks whether a quoted passage occurs in the text extracted from a PDF at the physical page and bounding box you supply. It checks quote and location support in extracted evidence — it is **not** a claim that the underlying statement is semantically true, and it does not independently verify OCR accuracy. No model judges the quote. Native PDF text is always checked first; OCR is only used when you explicitly request it. `cite_check` is part of anymd Pro.

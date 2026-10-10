@@ -1,7 +1,7 @@
 ---
-title: "PDF to Markdown: Layout Engine, Tables, and OCR"
+title: "PDF to Markdown: Layout Engine, Tables, and OCR Options"
 sidebarTitle: "PDF"
-description: "anymd converts PDFs to reading-order Markdown using a glyph-position layout engine. Handles two-column papers, borderless tables, page anchors, and optional doc-VLM OCR for scans."
+description: "anymd converts PDFs to reading-order Markdown using a glyph-position layout engine — two-column layouts, borderless tables, page anchors, and VLM OCR."
 ---
 
 anymd converts PDFs to reading-order Markdown — headings, paragraphs, lists, tables, sub/superscripts, `<!-- page N -->` anchors, and bookmarks assembled into an outline. Running headers, page numbers, and text a reader cannot see are stripped automatically. The result is clean prose that language models can read without fighting around artefacts.
@@ -68,7 +68,7 @@ Ranges are comma-separated. A single number selects one page. Ranges can be comb
 
 ## Embedded images
 
-Figures and illustrations inside a PDF are exported automatically. anymd writes each image once to the cache directory (`$ANYMD_CACHE_DIR/images`, or the platform default under `~/.cache/anymd`), named by the first 16 hex digits of its SHA-256 hash, and inserts a reference in the Markdown at the image's reading-order position:
+Figures and illustrations inside a PDF are exported automatically. anymd writes each image once to the cache directory (`$ANYMD_CACHE_DIR/images`, or the platform default under `~/.cache/anymd`), named by the first 16 hex digits of its SHA-256 hash, and inserts a reference in the Markdown at the image's reading-order position. The same picture is written only once regardless of how often it appears. Files unused for 30 days are deleted; the folder is kept under 2 GiB with the oldest files pruned first (this cleanup runs at most once a day, at CLI or server start). Images over 50 megapixels are refused.
 
 ```markdown
 ![Figure 3: Encoder–decoder attention weights](/home/me/.cache/anymd/images/9f2c1a7be03d55a4.png)
@@ -81,4 +81,4 @@ Figures and illustrations inside a PDF are exported automatically. anymd writes 
 
 **Scanned pages are not figures.** A page with no usable text layer and a single image covering at least 80% of the page area is treated as the page itself — it goes to OCR rather than producing an image reference.
 
-**Supported image types.** JPEG images are written as-is. 8-bit grayscale, RGB, and palette rasters become PNG. CMYK, JPEG 2000, JBIG2, CCITT, and vector graphics (charts or diagrams drawn from lines and text) are not currently exported.
+**Supported image types.** JPEG images are written as-is. 8-bit grayscale, RGB, and palette rasters become PNG. Known gaps in this version: figures drawn as vector graphics (charts and diagrams made of lines and text), inline images, CMYK, JPEG 2000, JBIG2, CCITT, and soft-mask transparency are not currently exported.

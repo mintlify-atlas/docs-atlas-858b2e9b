@@ -1,7 +1,7 @@
 ---
 title: "Word, PowerPoint, Excel, EPUB, and HTML Conversion"
 sidebarTitle: "Office & Web"
-description: "anymd converts DOCX with tracked changes, PPTX slides with speaker notes, Excel spreadsheets, EPUB chapters, and HTML pages (main article only) to clean Markdown natively in Rust."
+description: "anymd converts Word DOCX, PowerPoint, Excel, EPUB, and HTML to clean Markdown natively in Rust — tracked changes, speaker notes, and tables all preserved."
 ---
 
 Word documents, PowerPoint decks, Excel workbooks, EPUB books, and HTML pages are all parsed natively in Rust — zip/XML for Office Open XML formats, the calamine library for spreadsheets, and html5ever for HTML. No LibreOffice, no COM automation, no cloud conversion service. The same binary that runs on your laptop runs in your CI pipeline or inside a Docker container with no additional dependencies.
@@ -63,7 +63,7 @@ Markdown, plain text, and JSON files are returned unchanged. Pagination and the 
 
 Pictures inside DOCX, PPTX, EPUB, and PDF are exported automatically to a shared cache and referenced inline. This lets an agent open an extracted image directly, even though the source file is a binary container.
 
-anymd writes each image to `<cache>/images/<first 16 hex of SHA-256>.<ext>`, where `<cache>` is `$ANYMD_CACHE_DIR`, or the platform default (`~/.cache/anymd`, `~/Library/Caches/anymd`, `%LOCALAPPDATA%\anymd\cache`). The same picture embedded in multiple documents is stored once. Files unused for 30 days are removed; the folder is kept under 2 GiB with the oldest files pruned first. This cleanup runs at most once a day, at CLI or server start.
+anymd writes each image to `<cache>/images/<first 16 hex of SHA-256>.<ext>`, where `<cache>` is `$ANYMD_CACHE_DIR`, or the platform default (`~/.cache/anymd`, `~/Library/Caches/anymd`, `%LOCALAPPDATA%\anymd\cache`). The same picture embedded in multiple documents is stored once. Files unused for 30 days are removed; the folder is kept under 2 GiB with the oldest files pruned first. This cleanup runs at most once a day, at CLI or server start. Images over 50 megapixels are refused.
 
 The Markdown reference looks like this:
 
@@ -78,4 +78,4 @@ The Markdown reference looks like this:
 
 **Which images are exported.** DOCX `word/media` folder contents, PPTX slide pictures in slide order, and EPUB `<img>` files. A reference costs only its two inline lines against the token budget — the image file itself is never counted.
 
-**Known gaps in this version.** Figures drawn as vector graphics (charts and diagrams made of lines and text), inline SVG, CMYK rasters, JPEG 2000, JBIG2, CCITT, and images with soft-mask transparency are not currently exported.
+**Known gaps in this version.** Figures drawn as vector graphics (charts and diagrams made of lines and text), inline images, CMYK rasters, JPEG 2000, JBIG2, CCITT, and images with soft-mask transparency are not currently exported.

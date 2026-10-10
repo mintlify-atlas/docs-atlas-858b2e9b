@@ -1,7 +1,7 @@
 ---
-title: "anymd CLI Command Reference"
+title: "anymd CLI Commands: Convert, Search, and MCP Server"
 sidebarTitle: "Commands"
-description: "Complete reference for all anymd CLI commands: convert files, outline documents, search folders, run the MCP server, configure clients, and manage OCR. Exit codes included."
+description: "Full anymd CLI command reference: convert files, outline documents, search folders, run the MCP server, set up clients, and manage OCR."
 ---
 
 anymd serves a dual purpose: it is both a fast MCP server that AI agents connect to over stdio or HTTP, and a standalone command-line converter that turns PDFs, Word documents, PowerPoint decks, spreadsheets, EPUB books, web pages, images, and audio/video files into clean Markdown. The same binary handles both roles — when stdin is piped and no file arguments are given it automatically enters MCP server mode, so a single `npx -y @sylphx/anymd` command works in both contexts without any extra flags.

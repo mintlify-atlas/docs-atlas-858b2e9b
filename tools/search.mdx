@@ -1,7 +1,7 @@
 ---
-title: "search: Find Text Across Files, Folders, and URLs"
+title: "search: Find Text Across Files, Directories, and URLs"
 sidebarTitle: "search"
-description: "The search MCP tool finds exact phrases or BM25-ranked passages across local files, directories (with .gitignore support), and web URLs. Returns one hit per line with context."
+description: "The search MCP tool finds exact phrases or BM25-ranked passages across local files and directories with .gitignore support and web URLs, one hit per line."
 ---
 
 The `search` tool scans local files, directory trees, and web URLs for a query and returns one annotated hit per line. It operates in three modes: `auto` tries an exact phrase match first and falls back to BM25-ranked passage retrieval when nothing matches; `literal` enforces an exact phrase match only; and `ranked` always uses BM25 over the individual query words. Directories are searched recursively and `.gitignore` rules are respected automatically — anymd will not surface files your project intentionally excludes. No model, index, or API key is needed.

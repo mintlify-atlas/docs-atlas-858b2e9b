@@ -1,7 +1,7 @@
 ---
-title: "read: Convert Any File or URL to Markdown"
+title: "read: Convert Any File, URL, or Directory to Markdown"
 sidebarTitle: "read"
-description: "The read MCP tool converts a local file, web URL, or directory listing to clean Markdown. Supports pagination with max_tokens and cursor, OCR, tracked changes, and embedded images."
+description: "The read MCP tool converts any local file, web URL, or directory to Markdown, with pagination, OCR for scanned pages, tracked-change modes, and image refs."
 ---
 
 The `read` tool is anymd's primary conversion engine. Pass it a local file path, an `http(s)` URL, or a directory path and it returns clean, well-structured Markdown ready for your agent to process. For paginated documents — PDFs, presentations, spreadsheets, and EPUB books — `read` adds YAML front matter describing the source and page range, plus `<!-- unit label -->` anchors before each page, slide, sheet, or chapter. When a document exceeds the token budget, `read` stops at a natural unit boundary and appends a cursor your agent passes back to continue from exactly where it left off.
